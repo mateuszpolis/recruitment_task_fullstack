@@ -1,0 +1,69 @@
+---
+description: Business logic and project-specific rules for the Telemedi recruitment task
+globs:
+alwaysApply: true
+---
+
+# Business Rules
+
+## Supported Currencies
+- The exchange office application must support **exactly these currencies** (unless extended in the future):
+  - EUR (Euro)
+  - USD (US Dollar)
+  - CZK (Czech Koruna)
+  - IDR (Indonesian Rupiah)
+  - BRL (Brazilian Real)
+
+- Changing the list of currencies may require a small code adjustment.
+
+## Buy/Sell Rate Calculation
+- All rates are derived from the **NBP average exchange rate**.
+- EUR and USD:
+  - **Buy rate** = NBP mid rate - 0.15 PLN
+  - **Sell rate** = NBP mid rate + 0.11 PLN
+- CZK, IDR, BRL:
+  - No buy rate is provided.
+  - **Sell rate** = NBP mid rate + 0.20 PLN
+
+## Data Source
+- Use only the **NBP API** from the backend (not directly from the frontend).
+- Reference:
+  - Local documentation in [`nbp-api.md`](../../nbp-api.md) (included in this repository).
+  - Official docs: [https://api.nbp.pl/](https://api.nbp.pl/)
+
+### Relevant Endpoints
+- Example:  
+  - Table A (mid rates):  
+    `https://api.nbp.pl/api/exchangerates/tables/A/?format=json`
+  - Single currency (e.g., USD):  
+    `https://api.nbp.pl/api/exchangerates/rates/A/USD?format=json`
+
+- NBP publishes rates **around noon each day**.  
+- API may return 404 if data for a given day is not available yet.
+
+## Historical Data
+- For each supported currency, show the **history of rates for the last 14 days** before a selected date (default = today).
+- Historical queries must respect NBP API limits (max 93 days per request).
+
+## Backend Requirements
+- Implement the backend in **PHP (Symfony)**.
+- PHP version must be **8.2** (as specified in composer.json).
+- Do not add new Composer dependencies.
+
+## Frontend Requirements
+- Implement frontend in **React** (using existing setup in repo).
+- Do not add new npm dependencies.
+- Ensure the UI is **clear, readable, and useful** for exchange office employees.
+
+## Testing
+- Automated tests (PHPUnit for backend, Jest/RTL for frontend if already present) are expected as part of the evaluation.
+- Focus on correctness of rate calculations and edge cases (e.g., missing NBP data).
+
+## Performance
+- The application should be **performant enough for multiple concurrent users**.
+- Cache or optimize API calls responsibly, but only with existing tooling.
+
+# Cursor-specific guidance
+- These rules are **Always Applied** to remind agents of the business constraints during code generation.
+- Do not propose features outside of these requirements (e.g., no user accounts, dashboards, or analytics).
+- If requirements appear ambiguous, include `// ASSUMPTION:` comments in code before proceeding.

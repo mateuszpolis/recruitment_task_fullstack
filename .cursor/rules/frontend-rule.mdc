@@ -1,0 +1,129 @@
+---
+description: Frontend (React, JS) rules for the assets-based build (Webpack Encore, React 17, RRD v5)
+alwaysApply: false
+---
+# Frontend (React, JavaScript) Rules
+
+## Repository Context
+- Build system: **Webpack Encore** (`encore dev`, `encore production`), entrypoint `assets/js/app.js`.
+- Runtime: **React 17**, **react-router-dom v5**, **axios**, **prop-types**.
+- Styles: **single stylesheet** at `assets/css/app.css` (no CSS-in-JS / no frameworks).
+- App served from `/public/build` (Apache). Frontend is static assets only.
+- **Do not add new npm packages**. Use only what's in `package.json`.
+
+## Architecture & Code Style
+1. **Use existing stack only**
+   - React 17 function components with hooks; no class components unless already present.
+   - State management via **React state/context** only. **Do not** add Redux/Zustand/Recoil, etc.
+   - Router: **react-router-dom v5** patterns (`<Switch>`, `<Route>`, `useHistory`, `useLocation>`). **Do not** rewrite to v6 (`<Routes>`).
+
+2. **Project layout**
+   - Entrypoint: `assets/js/app.js` (mount root, router setup, global providers).
+   - Components live in `assets/js/components/` (e.g., `Home.js`, `SetupCheck.js`).
+   - Keep component files small and focused; extract reusable UI into separate files under `components/`.
+
+3. **JavaScript only**
+   - No TypeScript. Use **PropTypes** for runtime prop validation.
+   - Prefer ES modules; follow patterns already used in repo.
+   - Keep coding style consistent with existing files (quotes, semicolons, import order). If no linter config exists, mirror current style.
+
+4. **Side effects**
+   - Keep effects in hooks (`useEffect`, `useMemo`, `useCallback`) and avoid spreading side-effects through render logic.
+   - Avoid global singletons unless already present; prefer context or explicit props.
+
+## Data & API Access
+1. **Backend boundary**
+   - **Never call the NBP API from the browser.** All data must come from the PHP backend endpoints.
+   - Use **relative URLs** (e.g., `/api/...`) to talk to the PHP backend. Do **not** hardcode full domains.
+
+2. **Fetching**
+   - Use **axios** for HTTP requests (already in deps). Create a small, reusable fetch layer if needed (no new libs).
+   - Implement **loading, error, and empty** states for every async view.
+   - Handle 404 from backend (e.g., when NBP data for “today” isn’t published yet) with a clear user message and safe fallback.
+
+3. **Currency flows**
+   - Inputs must be **controlled** and reject invalid characters. Don’t compute with floats; display using backend-provided values or decimal-safe outputs.
+   - Clearly label base vs. quote currencies. Keep visible precision consistent with backend rules.
+
+## Styling & Design
+
+1. **Single stylesheet**
+   - Only use `assets/css/app.css`. **Do not** introduce Tailwind, CSS-in-JS, UI kits, preprocessors, or additional fonts.
+   - Keep class names simple and predictable (BEM-ish or current style). Avoid “magic numbers”.
+
+2. **Design language**
+   - **Flat surfaces**: no heavy shadows; rely on clean borders and subtle contrast.
+   - **Borders**: 1px solid with soft grays (`--gray-200/300`). Border-radius **6–8px** for inputs, buttons, cards.
+   - **Spacing scale**: multiples of **4/8px** only.
+   - **Typography**: system font stack; use `font-variant-numeric: tabular-nums` where numeric alignment matters (rates).
+   - **Color system**: gray-first UI. One accent color used sparingly for focus/primary actions.
+     - Use CSS custom properties (defined in `:root`) for grays and accent. **Do not hardcode hexes** in components.
+
+3. **Interactive states**
+   - **Hover**: subtle background shift (2–4% lightness) or border darken—no large shadow “lifts”.
+   - **Focus**: visible 2px outline (focus ring) in the **accent** color; also increase border contrast.
+   - **Active/Pressed**: 2–4% darker than hover.
+   - **Disabled**: reduce opacity; ensure cursor/interaction is blocked.
+   - All state transitions should be **150–250ms** `ease` (color, background, border).
+
+4. **Inputs & Forms**
+   - Flat inputs: `background: var(--surface)`, `border: 1px solid var(--gray-300)`, `border-radius: 6px`, comfortable padding (e.g., `8px 12px`).
+   - On focus: border → `var(--accent-500)` + 2px focus ring (outline or box-shadow).
+   - Clear inline errors: red border + small helper text; keep contrast ≥ 4.5:1.
+
+5. **Buttons**
+   - **Primary**: filled accent background, white text; hover/active darken 4–6%.
+   - **Secondary**: neutral (surface) with gray border; hover slightly darken bg.
+   - **Tertiary**: text-style button with accent text and underline on hover (no bg).
+   - Use consistent heights and padding; never rely on content for sizing.
+
+6. **Cards, Tables, Lists**
+   - Cards: flat with 1px border (no or ultra-soft shadow), 12–16px padding, 8px radius.
+   - Tables: minimalist—header with medium weight; row dividers `--gray-200`; optional very subtle zebra.
+   - Prefer **right-aligned tabular numerals** for amounts/rates.
+
+7. **Accessibility**
+   - Keep contrast **≥ 4.5:1** for text and critical UI.
+   - Respect `:focus-visible`; ensure clear focus indication on all interactive elements.
+   - Targets ≥ 40px touch height where possible; label all form fields.
+
+8. **Motion**
+   - Subtle only (opacity/translateY 2–4px max). Respect `prefers-reduced-motion` with instant state changes.
+
+## Accessibility (WCAG 2.2 AA mindset)
+- Prefer semantic HTML; only add ARIA where necessary.
+- Ensure keyboard accessibility (logical tab order, visible focus).
+- Label form controls and surface validation errors inline.
+- Maintain **≥ 4.5:1** contrast for text/UI elements.
+
+## Performance
+1. **Rendering**
+   - Memoize expensive components/hooks (`React.memo`, `useMemo`, `useCallback`) when beneficial.
+   - Be careful with effect dependency arrays to avoid unnecessary re-renders.
+
+2. **Code splitting (optional)**
+   - If splitting is warranted, use React 17 patterns (`React.lazy` + `Suspense`) compatible with the current Encore config. **Do not** add new bundlers or plugins.
+
+3. **Assets**
+   - Reuse existing images/SVGs (`assets/img`). Optimize usage (avoid oversized images).
+
+## Testing (if/when present)
+- Use **@testing-library/react** already in devDependencies.
+- Co-locate tests as `*.test.js` alongside components.
+- Prefer user-centric queries (`getByRole`, `getByLabelText`, `getByText`).
+- Cover rounding boundaries, min/max amounts, “stale rate” scenarios, and error/empty/loading states.
+
+## Error Handling & UX Quality
+- Show actionable error messages (e.g., “Rates for today aren’t published yet—try a different date.”).
+- Protect the user from partial failures (graceful fallbacks, retry buttons if appropriate).
+- Log to console sparingly in production builds; avoid leaking sensitive data.
+
+## Build & Scripts
+- Use the **existing scripts**:
+  - `npm run dev`, `npm run watch` for development.
+  - `npm run build` for production bundle.
+- Do not modify the Encore/webpack configuration unless strictly required by a bug fix—and only minimally.
+
+## No New Dependencies
+- **Do not** add or suggest new npm packages, polyfills, or UI kits.
+- If a feature appears to need a library, implement with **existing tooling**, or add a `// ASSUMPTION:` comment and choose the simplest in-repo approach.

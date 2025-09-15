@@ -1,0 +1,50 @@
+FROM php:8.2-apache
+
+WORKDIR /var/www/html
+
+# Install system dependencies
+RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install -y git curl zip libzip-dev
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Install Node.js 16
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
+RUN apt-get install -y nodejs
+
+# Enable Apache rewrite module
+RUN a2enmod rewrite
+
+# Copy Apache configuration
+COPY ./000-default.conf /etc/apache2/sites-available/
+
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www
+RUN chmod -R 755 /var/www
+
+# Install PHP dependencies (this will be cached unless composer files change)
+COPY composer.json composer.lock ./
+RUN composer install --no-scripts --no-autoloader
+
+# Install Node dependencies (this will be cached unless package files change)
+COPY package.json package-lock.json ./
+RUN npm install
+
+# Copy the rest of the application
+COPY . .
+
+# Generate autoloader
+RUN composer dump-autoload --optimize
+
+# Create build directory and set permissions
+RUN mkdir -p /var/www/html/public/build
+RUN chown -R www-data:www-data /var/www
+
+# Copy startup script
+COPY ./docker/start-dev.sh /usr/local/bin/start-dev.sh
+RUN chmod +x /usr/local/bin/start-dev.sh
+
+EXPOSE 80 443
+
+CMD ["/usr/local/bin/start-dev.sh"]
