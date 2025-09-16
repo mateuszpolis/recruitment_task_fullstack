@@ -8,15 +8,15 @@ final class RateQuote
 {
     public function __construct(
         public readonly string $code,
-        public readonly float $mid,
-        public readonly ?float $buy,
-        public readonly ?float $sell,
+        public readonly string $mid,
+        public readonly ?string $buy,
+        public readonly ?string $sell,
         public readonly string $effectiveDate
     ) {
     }
 
     /**
-     * @return array{code: string, mid: float, buy: float|null, sell: float|null, effectiveDate: string}
+     * @return array{code: string, mid: string, buy: string|null, sell: string|null, effectiveDate: string}
      */
     public function toArray(): array
     {

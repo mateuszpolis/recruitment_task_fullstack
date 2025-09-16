@@ -252,4 +252,119 @@ class RateCalculatorTest extends TestCase
         $this->assertNull($czkRates['buy']);
         $this->assertSame('0.38', $czkRates['sell']); // 0.1789 + 0.20
     }
+
+    public function testCalculateQuoteEurBuy(): void
+    {
+        $result = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '100.00');
+
+        $this->assertSame('4.10', $result['unitRate']); // 4.25 - 0.15
+        $this->assertSame('410.00', $result['total']); // 100 * 4.10
+    }
+
+    public function testCalculateQuoteEurSell(): void
+    {
+        $result = $this->calculator->calculateQuote('EUR', '4.2500', 'sell', '50.25');
+
+        $this->assertSame('4.36', $result['unitRate']); // 4.25 + 0.11
+        $this->assertSame('219.09', $result['total']); // 50.25 * 4.36
+    }
+
+    public function testCalculateQuoteUsdBuy(): void
+    {
+        $result = $this->calculator->calculateQuote('USD', '3.9800', 'buy', '200.00');
+
+        $this->assertSame('3.83', $result['unitRate']); // 3.98 - 0.15
+        $this->assertSame('766.00', $result['total']); // 200 * 3.83
+    }
+
+    public function testCalculateQuoteCzkSell(): void
+    {
+        $result = $this->calculator->calculateQuote('CZK', '0.1750', 'sell', '75.50');
+
+        $this->assertSame('0.38', $result['unitRate']); // 0.175 + 0.20
+        $this->assertSame('28.69', $result['total']); // 75.50 * 0.38
+    }
+
+    public function testCalculateQuoteCzkBuyNotSupported(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Buy operations are not supported for CZK');
+
+        $this->calculator->calculateQuote('CZK', '0.1750', 'buy', '100.00');
+    }
+
+    public function testCalculateQuoteInvalidSide(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Side must be either "buy" or "sell"');
+
+        $this->calculator->calculateQuote('EUR', '4.2500', 'invalid', '100.00');
+    }
+
+    public function testCalculateQuoteInvalidAmount(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Amount must be a positive number with at most 2 decimal places');
+
+        $this->calculator->calculateQuote('EUR', '4.2500', 'buy', 'invalid');
+    }
+
+    public function testCalculateQuoteZeroAmount(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Amount must be greater than 0');
+
+        $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '0.00');
+    }
+
+    public function testCalculateQuoteAmountPrecision(): void
+    {
+        // Test with amount having exactly 2 decimal places
+        $result = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '123.45');
+        $this->assertSame('4.10', $result['unitRate']);
+        $this->assertSame('506.14', $result['total']); // 123.45 * 4.10 (bcmul rounds correctly)
+
+        // Test with amount having 1 decimal place
+        $result = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '123.5');
+        $this->assertSame('4.10', $result['unitRate']);
+        $this->assertSame('506.35', $result['total']); // 123.5 * 4.10
+
+        // Test with amount having no decimal places
+        $result = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '123');
+        $this->assertSame('4.10', $result['unitRate']);
+        $this->assertSame('504.30', $result['total']); // 123 * 4.10
+    }
+
+    public function testCalculateQuoteAmountTooManyDecimals(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Amount must be a positive number with at most 2 decimal places');
+
+        $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '100.123');
+    }
+
+    public function testCalculateQuoteCaseInsensitive(): void
+    {
+        $result1 = $this->calculator->calculateQuote('eur', '4.2500', 'BUY', '100.00');
+        $result2 = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '100.00');
+
+        $this->assertSame($result2, $result1);
+    }
+
+    public function testCalculateQuoteWithWhitespace(): void
+    {
+        $result = $this->calculator->calculateQuote(' EUR ', '4.2500', ' buy ', ' 100.00 ');
+
+        $this->assertSame('4.10', $result['unitRate']);
+        $this->assertSame('410.00', $result['total']);
+    }
+
+    public function testCalculateQuotePrecisionWithBcmath(): void
+    {
+        // Test a case where floating point precision might be an issue
+        $result = $this->calculator->calculateQuote('EUR', '4.1111', 'buy', '33.33');
+
+        $this->assertSame('3.96', $result['unitRate']); // 4.1111 - 0.15 = 3.9611, formatted to 3.96
+        $this->assertSame('131.98', $result['total']); // 33.33 * 3.96 using bcmul for precision
+    }
 }

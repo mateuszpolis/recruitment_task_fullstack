@@ -123,4 +123,55 @@ final class RateCalculator
 
         return $result;
     }
+
+    /**
+     * Calculates a quote for currency exchange.
+     *
+     * @param string $code   Currency code (EUR, USD, CZK, IDR, BRL)
+     * @param string $mid    NBP mid rate as decimal string
+     * @param string $side   Either 'buy' or 'sell'
+     * @param string $amount Amount to exchange as decimal string
+     *
+     * @return array Array with 'unitRate' and 'total' as formatted strings
+     *
+     * @throws \InvalidArgumentException If currency code is not supported, side is invalid, or operation not supported
+     */
+    public function calculateQuote(string $code, string $mid, string $side, string $amount): array
+    {
+        $code = strtoupper(trim($code));
+        $side = strtolower(trim($side));
+
+        // Validate side
+        if (!in_array($side, ['buy', 'sell'], true)) {
+            throw new \InvalidArgumentException('Side must be either "buy" or "sell"');
+        }
+
+        // Validate amount format
+        if (!preg_match('/^\d+(?:\.\d{1,2})?$/', trim($amount))) {
+            throw new \InvalidArgumentException('Amount must be a positive number with at most 2 decimal places');
+        }
+
+        $amountFloat = (float) $amount;
+        if ($amountFloat <= 0) {
+            throw new \InvalidArgumentException('Amount must be greater than 0');
+        }
+
+        // Get buy/sell rates
+        $buySell = $this->midToBuySell($code, $mid);
+
+        // Check if the requested operation is supported
+        if ($buySell[$side] === null) {
+            throw new \InvalidArgumentException(sprintf('%s operations are not supported for %s', ucfirst($side), $code));
+        }
+
+        $unitRate = $buySell[$side];
+
+        // Calculate total using bc functions for precision
+        $total = bcmul(trim($amount), $unitRate, 2);
+
+        return [
+            'unitRate' => $unitRate,
+            'total' => $total,
+        ];
+    }
 }

@@ -8,6 +8,22 @@ setupcheck:
     path: /api/setup-check
     controller: App\Controller\DefaultController::setupCheck
 
+# Exchange rates API
+rates_current:
+    path: /api/rates/current
+    controller: App\Controller\RatesController::getCurrentRates
+    methods: GET
+
+rates_history:
+    path: /api/rates/{code}/history
+    controller: App\Controller\RatesController::getHistoryRates
+    methods: GET
+
+rates_quote:
+    path: /api/quote
+    controller: App\Controller\RatesController::getQuote
+    methods: POST
+
 index:
     path: /{wildcard}
     defaults: {

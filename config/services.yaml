@@ -34,3 +34,7 @@ services:
         class: GuzzleHttp\Client
         
     GuzzleHttp\Client: ~
+    
+    # NBP Client interface binding
+    App\Service\NbpClientInterface:
+        class: App\Service\NbpClient

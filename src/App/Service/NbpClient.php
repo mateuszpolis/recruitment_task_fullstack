@@ -14,7 +14,7 @@ use Symfony\Contracts\Cache\ItemInterface;
  * NBP API client designed around NBP's official business day publication schedule.
  * One table publication per business day (~noon Warsaw time), not live rates.
  */
-final class NbpClient
+final class NbpClient implements NbpClientInterface
 {
     private const BASE_URL = 'https://api.nbp.pl/api';
     private const MAX_HISTORY_DAYS = 93; // NBP API limit
@@ -66,7 +66,8 @@ final class NbpClient
                 return $data;
             }, 1.5); // Beta factor for singleflight/anti-stampede
         } catch (\Throwable $e) {
-            return $this->lastGoodOrThrow($lastGoodKey, $e instanceof NbpClientException ? $e : new NbpClientException('Fetch failed', 0, $e));
+            $originalException = $e instanceof NbpClientException ? $e : new NbpClientException('Fetch failed', 0, $e);
+            return $this->lastGoodOrThrow($lastGoodKey, $originalException);
         }
     }
 
@@ -464,19 +465,23 @@ final class NbpClient
     }
 
     /**
-     * Returns lastGood data or throws an exception if no data is available.
+     * Returns lastGood data or throws the original exception if no data is available.
      *
      * @throws NbpClientException When no data is available or data is too old
      */
-    private function lastGoodOrThrow(string $key, \Throwable $cause): array
+    private function lastGoodOrThrow(string $key, \Throwable $originalException): array
     {
         $lastGood = $this->cache->get($key, function (ItemInterface $item): ?array {
-            $item->expiresAfter(1); // don’t poison cache with null
+            $item->expiresAfter(1); // don't poison cache with null
             return null;
         });
 
         if (!is_array($lastGood) || !isset($lastGood['data'], $lastGood['ts'], $lastGood['ttl'])) {
-            throw new NbpClientException('No lastGood data available', 0, $cause);
+            // No lastGood data available, throw the original exception
+            if ($originalException instanceof NbpClientException) {
+                throw $originalException;
+            }
+            throw new NbpClientException('No lastGood data available', 0, $originalException);
         }
 
         $age = time() - $lastGood['ts'];
@@ -484,7 +489,12 @@ final class NbpClient
         if ($age <= $maxAge) {
             return $lastGood['data'];
         }
-        throw new NbpClientException('LastGood data too old', 0, $cause);
+        
+        // LastGood data is too old, throw the original exception
+        if ($originalException instanceof NbpClientException) {
+            throw $originalException;
+        }
+        throw new NbpClientException('LastGood data too old', 0, $originalException);
     }
 }
 
