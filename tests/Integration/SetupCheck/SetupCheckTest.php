@@ -15,7 +15,7 @@ class SetupCheckTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $response = $client->getResponse();
         $this->assertJson($response->getContent());
-        $responseData = json_decode($response->getContent(), TRUE);
+        $responseData = json_decode($response->getContent(), true);
         $this->assertArrayHasKey('testParam', $responseData);
     }
 

@@ -127,7 +127,7 @@ class RateCalculatorTest extends TestCase
     public function testMidToBuySellEUR(): void
     {
         $result = $this->calculator->midToBuySell('EUR', '4.50');
-        
+
         $this->assertArrayHasKey('buy', $result);
         $this->assertArrayHasKey('sell', $result);
         $this->assertSame('4.35', $result['buy']);  // 4.50 - 0.15
@@ -137,7 +137,7 @@ class RateCalculatorTest extends TestCase
     public function testMidToBuySellUSD(): void
     {
         $result = $this->calculator->midToBuySell('USD', '4.25');
-        
+
         $this->assertSame('4.10', $result['buy']);  // 4.25 - 0.15
         $this->assertSame('4.36', $result['sell']); // 4.25 + 0.11
     }
@@ -145,7 +145,7 @@ class RateCalculatorTest extends TestCase
     public function testMidToBuySellCZK(): void
     {
         $result = $this->calculator->midToBuySell('CZK', '0.18');
-        
+
         $this->assertNull($result['buy']);           // No buy rate for CZK
         $this->assertSame('0.38', $result['sell']); // 0.18 + 0.20
     }
@@ -153,7 +153,7 @@ class RateCalculatorTest extends TestCase
     public function testMidToBuySellIDR(): void
     {
         $result = $this->calculator->midToBuySell('IDR', '0.000275');
-        
+
         $this->assertNull($result['buy']);              // No buy rate for IDR
         $this->assertSame('0.20', $result['sell']);    // 0.000275 + 0.20
     }
@@ -161,7 +161,7 @@ class RateCalculatorTest extends TestCase
     public function testMidToBuySellBRL(): void
     {
         $result = $this->calculator->midToBuySell('BRL', '0.85');
-        
+
         $this->assertNull($result['buy']);           // No buy rate for BRL
         $this->assertSame('1.05', $result['sell']); // 0.85 + 0.20
     }
@@ -171,7 +171,7 @@ class RateCalculatorTest extends TestCase
         $result1 = $this->calculator->midToBuySell('eur', '4.50');
         $result2 = $this->calculator->midToBuySell('EUR', '4.50');
         $result3 = $this->calculator->midToBuySell('Eur', '4.50');
-        
+
         $this->assertSame($result2, $result1);
         $this->assertSame($result2, $result3);
     }
@@ -179,7 +179,7 @@ class RateCalculatorTest extends TestCase
     public function testMidToBuySellWithWhitespace(): void
     {
         $result = $this->calculator->midToBuySell(' EUR ', '4.50');
-        
+
         $this->assertSame('4.35', $result['buy']);
         $this->assertSame('4.61', $result['sell']);
     }
@@ -188,7 +188,7 @@ class RateCalculatorTest extends TestCase
     {
         // Test with mid rate that creates boundary cases after offset
         $result = $this->calculator->midToBuySell('EUR', '0.14995');
-        
+
         // 0.14995 - 0.15 = -0.00005, 0.14995 + 0.11 = 0.25995
         $this->assertSame('0.00', $result['buy']);   // Very small negative rounds to 0.00
         $this->assertSame('0.26', $result['sell']);
@@ -198,7 +198,7 @@ class RateCalculatorTest extends TestCase
     {
         // Test precise calculations with boundary values
         $result = $this->calculator->midToBuySell('EUR', '1.5005');
-        
+
         // 1.5005 - 0.15 = 1.3505, 1.5005 + 0.11 = 1.6105
         $this->assertSame('1.35', $result['buy']);   // 1.3505 -> rounds to 1.35
         $this->assertSame('1.61', $result['sell']);  // 1.6105 -> rounds to 1.61
@@ -225,7 +225,7 @@ class RateCalculatorTest extends TestCase
         $original = '4.23';
         $scaled = $this->calculator->parseDecimalToScaled($original);
         $formatted = $this->calculator->formatPln($scaled);
-        
+
         $this->assertSame($original, $formatted);
     }
 
@@ -235,19 +235,19 @@ class RateCalculatorTest extends TestCase
         $eurMid = '4.3245';
         $usdMid = '3.9876';
         $czkMid = '0.1789';
-        
+
         $eurRates = $this->calculator->midToBuySell('EUR', $eurMid);
         $usdRates = $this->calculator->midToBuySell('USD', $usdMid);
         $czkRates = $this->calculator->midToBuySell('CZK', $czkMid);
-        
+
         // Verify EUR rates
         $this->assertSame('4.17', $eurRates['buy']);  // 4.3245 - 0.15
         $this->assertSame('4.43', $eurRates['sell']); // 4.3245 + 0.11
-        
+
         // Verify USD rates
         $this->assertSame('3.84', $usdRates['buy']);  // 3.9876 - 0.15
         $this->assertSame('4.10', $usdRates['sell']); // 3.9876 + 0.11
-        
+
         // Verify CZK rates
         $this->assertNull($czkRates['buy']);
         $this->assertSame('0.38', $czkRates['sell']); // 0.1789 + 0.20

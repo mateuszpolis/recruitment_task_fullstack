@@ -19,13 +19,13 @@ class ErrorResponseTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('error', $result);
-        
+
         $error = $result['error'];
         $this->assertIsArray($error);
         $this->assertArrayHasKey('code', $error);
         $this->assertArrayHasKey('message', $error);
         $this->assertArrayHasKey('details', $error);
-        
+
         $this->assertSame($code, $error['code']);
         $this->assertSame($message, $error['message']);
         $this->assertSame($details, $error['details']);
@@ -40,7 +40,7 @@ class ErrorResponseTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('error', $result);
-        
+
         $error = $result['error'];
         $this->assertArrayHasKey('details', $error);
         $this->assertSame([], $error['details']);
