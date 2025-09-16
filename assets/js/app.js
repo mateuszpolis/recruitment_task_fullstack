@@ -11,6 +11,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import '../css/app.css';
 
 // Import the three panel components
+import Header from './components/Header';
 import SidebarRates from './components/SidebarRates';
 import RateChart from './components/RateChart';
 import Calculator from './components/Calculator';
@@ -20,9 +21,7 @@ const App = () => {
 
     return (
         <div className="app-container">
-            <header className="app-header">
-                <h1>Exchange Office Dashboard</h1>
-            </header>
+            <Header />
             
             <main className="app-main">
                 <div className="panel panel-left">

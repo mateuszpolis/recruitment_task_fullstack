@@ -66,11 +66,10 @@ const Calculator = ({ selectedCurrency }) => {
 
     return (
         <div className="calculator">
-            <div className="calculator-header">
-                <h3>Calculate {selectedCurrency}</h3>
-            </div>
-
-            {currentRates && (
+            <h3>Calculate {selectedCurrency}</h3>
+            
+            <div className="calculator-content">
+                {currentRates && (
                 <div className="current-rates-display">
                     <h4>Current Rates</h4>
                     <div className="rates-grid">
@@ -174,6 +173,7 @@ const Calculator = ({ selectedCurrency }) => {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 };
