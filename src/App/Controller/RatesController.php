@@ -53,9 +53,8 @@ final class RatesController extends AbstractController
             // Build response with calculated buy/sell rates
             $rates = [];
             foreach ($requestedCodes as $code) {
-                
                 $mid = $tableData['rates'][$code];
-                $buySell = $this->rateCalculator->midToBuySell($code, $mid);
+                $buySell = $this->rateCalculator->midToBuySell($code, (string) $mid);
 
                 $rates[] = new RateQuote(
                     code: $code,

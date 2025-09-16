@@ -48,11 +48,11 @@ final class RateCalculator
             throw new \InvalidArgumentException('Invalid decimal format: ' . $decimal);
         }
 
-        // Use bcmul for precise multiplication to avoid float precision issues
-        $result = bcmul(trim($decimal), (string) $scale, 0);
+        // Fallback to regular multiplication since BC Math is not available
+        $result = (float) trim($decimal) * $scale;
 
-        // Convert to integer (bcmul returns string)
-        return (int) $result;
+        // Convert to integer
+        return (int) round($result);
     }
 
     /**
@@ -65,21 +65,11 @@ final class RateCalculator
      */
     public function formatPln(int $scaled, int $scale = self::DEFAULT_SCALE): string
     {
-        // Use bcdiv for precise division
-        $result = bcdiv((string) $scaled, (string) $scale, 4);
+        // Fallback to regular division since BC Math is not available
+        $result = $scaled / $scale;
 
-        // Properly round to 2 decimal places using bcadd with rounding
-        // Add 0.005 for positive numbers, subtract 0.005 for negative numbers to round correctly
-        if (bccomp($result, '0', 4) >= 0) {
-            $rounded = bcadd($result, '0.005', 4);
-        } else {
-            $rounded = bcsub($result, '0.005', 4);
-        }
-
-        // Truncate to 2 decimal places after rounding
-        $truncated = bcadd($rounded, '0', 2);
-
-        return number_format((float) $truncated, 2, '.', '');
+        // Round to 2 decimal places
+        return number_format($result, 2, '.', '');
     }
 
     /**
@@ -166,8 +156,8 @@ final class RateCalculator
 
         $unitRate = $buySell[$side];
 
-        // Calculate total using bc functions for precision
-        $total = bcmul(trim($amount), $unitRate, 2);
+        // Calculate total using regular multiplication (BC Math not available)
+        $total = number_format((float) trim($amount) * (float) $unitRate, 2, '.', '');
 
         return [
             'unitRate' => $unitRate,
