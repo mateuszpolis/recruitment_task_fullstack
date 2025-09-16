@@ -14,9 +14,9 @@ final class ErrorResponse
      *
      * @param string $code    Error code identifier
      * @param string $message Human-readable error message
-     * @param array  $details Optional additional error details
+     * @param array<string, mixed>  $details Optional additional error details
      *
-     * @return array The formatted error response
+     * @return array<string, array<string, mixed>> The formatted error response
      */
     public static function from(string $code, string $message, array $details = []): array
     {
