@@ -101,18 +101,17 @@
     padding: var(--space-4);
   }
   
-  /* Tables */
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-    font-variant-numeric: tabular-nums;
-  }
-  .table th, .table td {
-    padding: var(--space-2) var(--space-3);
-    border-bottom: 1px solid var(--gray-200);
-    text-align: right;
-  }
-  .table th:first-child, .table td:first-child { text-align: left; }
+/* Tables */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.table th, .table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: right;
+}
+.table th:first-child, .table td:first-child { text-align: left; }
   
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
@@ -237,11 +236,11 @@
 }
   
   .panel-left {
-    /* No border */
+    border-right: 1px solid var(--gray-200);
   }
   
   .panel-right {
-    /* No border */
+    border-left: 1px solid var(--gray-200);
   }
   
 /* ---- Sidebar Rates Component ---- */
@@ -520,15 +519,22 @@
   }
   
   .chart-container {
+    position: relative;
     margin-bottom: var(--space-4);
     border: 1px solid var(--gray-200);
     border-radius: var(--radius-md);
     padding: var(--space-3);
+    overflow: hidden; /* Ensures no overflow issues */
   }
   
   .chart-svg {
     width: 100%;
-    height: 200px;
+    height: 300px;
+    display: block; /* Removes any inline spacing */
+  }
+  
+  .chart-point {
+    transition: r var(--transition) ease, opacity var(--transition) ease;
   }
   
   .chart-point:hover {
@@ -536,10 +542,219 @@
     fill: var(--accent-500);
   }
   
+  .point-group {
+    opacity: 0;
+    animation: fadeInPoints var(--transition) ease forwards;
+  }
+  
+  .chart-point--hovered {
+    transition: r var(--transition-fast) ease;
+  }
+  
+  @keyframes fadeInPoints {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  .chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    margin: var(--space-3) 0;
+    flex-wrap: wrap;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.85rem;
+    color: var(--gray-600);
+  }
+  
+  .legend-line {
+    width: 20px;
+    height: 3px;
+    border-radius: 1px;
+  }
+  
+  .legend-line--mid {
+    background: var(--gray-500);
+  }
+  
+  .legend-line--buy {
+    background: var(--success-500);
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--success-500),
+      var(--success-500) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+  }
+  
+  .legend-line--sell {
+    background: var(--error-500);
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--error-500),
+      var(--error-500) 6px,
+      transparent 6px,
+      transparent 9px
+    );
+  }
+  
+  .chart-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    min-width: 200px;
+    max-width: 250px;
+    pointer-events: none;
+    opacity: 0;
+    animation: fadeInTooltip var(--transition-fast) ease forwards;
+    transform-origin: top left;
+  }
+  
+  @keyframes fadeInTooltip {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  
+  .tooltip-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .tooltip-date {
+    font-weight: 600;
+    color: var(--gray-800);
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--gray-200);
+    padding-bottom: var(--space-1);
+  }
+  
+  .tooltip-rate {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+  
+  .tooltip-label {
+    font-weight: 500;
+  }
+  
+  .tooltip-value {
+    font-weight: 600;
+    color: var(--gray-800);
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .tooltip-extra {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.8rem;
+    color: var(--gray-600);
+    border-top: 1px solid var(--gray-200);
+    padding-top: var(--space-1);
+  }
+  
+  .tooltip-extra div {
+    display: flex;
+    justify-content: space-between;
+    font-variant-numeric: tabular-nums;
+  }
+  
   .chart-data {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chart-table {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    margin-top: var(--space-4);
+  }
+
+  .table-header {
+    flex-shrink: 0;
+    background: var(--gray-100);
+  }
+
+  .table-header th {
+    padding: var(--space-3);
+    font-weight: 600;
+    color: var(--gray-700);
+    border: none;
+    background: var(--gray-100);
+  }
+
+  .table-body-container {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
+  }
+
+  .table-body tr {
+    border-bottom: 1px solid var(--gray-200);
+    transition: background-color var(--transition-fast) ease;
+  }
+
+  .table-body tr:hover {
+    background: var(--gray-100);
+  }
+
+  .table-body tr:last-child {
+    border-bottom: none;
+  }
+
+  .table-body td {
+    padding: var(--space-3);
+    border: none;
+    background: transparent;
+  }
+
+  .table-body-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .table-body-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .table-body-container::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+  }
+
+  .table-body-container::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-400);
   }
   
   /* ---- Calculator Component ---- */
