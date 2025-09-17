@@ -534,19 +534,17 @@ const RateChart = ({ selectedCurrency }) => {
             </div>
             
             <div className="chart-data">
-                <div className="chart-table">
-                    <table className="table">
-                        <thead className="table-header">
-                            <tr>
-                                <th>Date</th>
-                                <th>Mid Rate</th>
-                                <th>Buy Rate</th>
-                                <th>Sell Rate</th>
-                            </tr>
-                        </thead>
-                    </table>
+                <div className="chart-table">                
                     <div className="table-body-container">
                         <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Mid Rate</th>
+                                    <th>Buy Rate</th>
+                                    <th>Sell Rate</th>
+                                </tr>
+                            </thead>
                             <tbody className="table-body">
                                 {historyData
                                     .slice()

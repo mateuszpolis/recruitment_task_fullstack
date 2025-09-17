@@ -104,20 +104,16 @@
 /* Tables */
 .table {
   width: 100%;
-  border-collapse: collapse;
   font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-md);
 }
-.table th, .table td {
-  padding: var(--space-2) var(--space-3);
-  text-align: right;
+
+  
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
 }
-.table th:first-child, .table td:first-child { text-align: left; }
-  
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; }
-  }
-  
+
 /* ---- Three-Panel Layout ---- */
 .app-container {
   height: 100vh;
@@ -773,47 +769,68 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--gray-50);
     border-radius: var(--radius-md);
-    margin-top: var(--space-4);
-  }
-
-  .table-header {
-    flex-shrink: 0;
-    background: var(--gray-100);
-  }
-
-  .table-header th {
-    padding: var(--space-3);
-    font-weight: 600;
-    color: var(--gray-700);
-    border: none;
-    background: var(--gray-100);
+    margin-top: var(--space-6);
   }
 
   .table-body-container {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
+    background: var(--surface);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
   }
 
   .table-body tr {
-    border-bottom: 1px solid var(--gray-200);
-    transition: background-color var(--transition-fast) ease;
+    transition: all var(--transition-fast) ease;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-1);
+    background: var(--gray-50);
+    border: 0px;
   }
 
   .table-body tr:hover {
     background: var(--gray-100);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 
   .table-body tr:last-child {
-    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+  }
+
+  .table th {
+    border: none;
+    text-align: center;
+  }
+
+  tbody {
+    border: none;
   }
 
   .table-body td {
-    padding: var(--space-3);
+    padding: var(--space-2) var(--space-3);
     border: none;
     background: transparent;
+    text-align: center;
+  }
+
+
+  .table-body td:first-child {
+    text-align: left;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  }
+
+  .table-body td:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   }
 
   .table-body-container::-webkit-scrollbar {
