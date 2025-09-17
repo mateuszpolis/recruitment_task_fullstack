@@ -234,15 +234,7 @@
   overflow: hidden;
   min-height: 0;
 }
-  
-  .panel-left {
-    border-right: 1px solid var(--gray-200);
-  }
-  
-  .panel-right {
-    border-left: 1px solid var(--gray-200);
-  }
-  
+    
 /* ---- Sidebar Rates Component ---- */
 .sidebar-rates {
   display: flex;
@@ -757,7 +749,7 @@
     background: var(--gray-400);
   }
   
-  /* ---- Calculator Component ---- */
+  /* ---- Calculator Component (Revolut Style) ---- */
   .calculator {
     display: flex;
     flex-direction: column;
@@ -765,142 +757,288 @@
     overflow: hidden;
   }
 
-  .calculator h3 {
-    margin: 0 0 var(--space-4) 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--gray-800);
-    flex-shrink: 0;
-  }
-  
-  .calculator-content {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-  }
-
   .calculator-placeholder {
     text-align: center;
     padding: var(--space-6);
     color: var(--gray-500);
   }
-  
-  .current-rates-display {
-    margin-bottom: var(--space-6);
-    padding: var(--space-4);
-    background: var(--gray-50);
-    border-radius: var(--radius-md);
-  }
-  
-  .current-rates-display h4 {
-    margin: 0 0 var(--space-3) 0;
-    font-size: 1rem;
+
+  .calculator-placeholder h3 {
+    margin: 0 0 var(--space-2) 0;
+    font-size: 1.25rem;
     font-weight: 600;
-    color: var(--gray-700);
-  }
-  
-  .rates-grid {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-  
-  .rate-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .rate-label {
-    font-weight: 500;
-    color: var(--gray-600);
-  }
-  
-  .rate-value {
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
     color: var(--gray-800);
   }
-  
-  .calculator-form {
+
+  .exchange-container {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
-    margin-bottom: var(--space-4);
+    gap: var(--space-3);
+    padding: var(--space-4) 0;
   }
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
+
+  .exchange-title {
+    margin: 0 0 var(--space-4) 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    text-align: center;
   }
-  
-  .form-group label {
+
+  .currency-card {
+    background: var(--gray-50);
+    border-radius: 16px;
+    padding: var(--space-4);
+    position: relative;
+    transition: all var(--transition) ease;
+    min-height: 120px; /* Reserve consistent height for all cards */
+  }
+
+  .currency-card:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-300);
+  }
+
+  .transaction-label {
+    font-size: 0.8rem;
     font-weight: 500;
-    color: var(--gray-700);
+    color: var(--gray-600);
+    margin-bottom: var(--space-2);
+    text-align: center;
+    background: var(--gray-100);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
   }
-  
-  .radio-group {
+
+  .cash-flow-indicator {
+    font-weight: 600;
+    font-size: 1.2rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: var(--space-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+  }
+
+  .cash-flow-indicator.incoming {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-500);
+  }
+
+  .cash-flow-indicator.outgoing {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-500);
+  }
+
+  .currency-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .currency-flag-large {
+    font-size: 2rem;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .currency-info {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 2px;
+    min-height: 40px; /* Reserve space for potential two-line currency names */
+    justify-content: center; /* Center content vertically within the reserved space */
   }
-  
-  .radio-option {
+
+  .currency-code-large {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    letter-spacing: 0.5px;
+  }
+
+  .currency-name-small {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    line-height: 1.2;
+    min-height: 2.4em; /* Reserve space for up to 2 lines of text (1.2 * 2) */
+    display: flex;
+    align-items: center; /* Center the text vertically within the reserved space */
+  }
+
+  .currency-amount {
+    flex-shrink: 0;
+    text-align: right;
     display: flex;
     align-items: center;
     gap: var(--space-2);
+  }
+
+  .amount-input {
+    background: transparent;
+    border: none;
+    color: var(--gray-800);
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: right;
+    width: 120px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .amount-input:focus {
+    outline: none;
+  }
+
+  .amount-input::placeholder {
+    color: var(--gray-400);
+  }
+
+  .amount-display {
+    color: var(--gray-800);
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: right;
+    min-width: 120px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .loading-placeholder {
+    background: var(--gray-300);
+    height: 24px;
+    width: 100px;
+    border-radius: 4px;
+    animation: pulse 1.5s ease-in-out infinite;
+    min-width: 120px;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .currency-symbol {
+    color: var(--gray-600);
+    font-size: 1.2rem;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .swap-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .swap-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 0px;
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    transition: all var(--transition) ease;
+    z-index: 1;
+    background: var(--gray-50);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
-  
-  .calculator-error {
-    padding: var(--space-3);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid var(--error-500);
-    border-radius: var(--radius-md);
-    color: var(--error-500);
-    margin-bottom: var(--space-4);
+
+  .swap-button:hover:not(:disabled) {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+    color: var(--gray-700);
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
-  
-  .calculator-result {
-    padding: var(--space-4);
+
+  .swap-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .swap-button svg {
+    transition: transform var(--transition) ease;
+  }
+
+  /* Chrome, Safari, Edge, Opera */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Firefox */
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+
+  .swap-button.rotated svg {
+    transform: rotate(180deg);
+  }
+
+  .rate-info-card {
     background: var(--gray-50);
     border-radius: var(--radius-md);
+    padding: var(--space-4);
+    text-align: center;
+    margin-top: var(--space-3);
   }
-  
-  .calculator-result h4 {
-    margin: 0 0 var(--space-3) 0;
+
+  .rate-header {
+    font-size: 0.9rem;
+    color: var(--gray-800);
+    margin-bottom: var(--space-2);
+  }
+
+  .rate-line {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--gray-700);
+    color: var(--gray-800);
+    font-variant-numeric: tabular-nums;
+    margin: var(--space-2) 0;
   }
-  
-  .quote-details {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
+
+  .rate-timestamp {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    margin: var(--space-1) 0;
   }
-  
-  .quote-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .quote-row.total {
-    margin-top: var(--space-2);
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--gray-300);
-    font-weight: 600;
-    font-size: 1.1rem;
-  }
-  
-  .quote-meta {
+
+  .transaction-summary {
+    font-size: 0.85rem;
+    color: var(--gray-600);
     margin-top: var(--space-2);
     padding-top: var(--space-2);
     border-top: 1px solid var(--gray-200);
-    color: var(--gray-500);
-    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  .exchange-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error-500);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    color: var(--error-500);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: var(--space-2);
   }
   
   /* ---- Responsive Design ---- */

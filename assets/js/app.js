@@ -21,7 +21,7 @@ const App = () => {
 
     return (
         <div className="app-container">
-            <Header />
+            {/* <Header /> */}
             
             <main className="app-main">
                 <div className="panel panel-left">
