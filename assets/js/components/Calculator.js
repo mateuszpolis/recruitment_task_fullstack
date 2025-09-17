@@ -18,7 +18,7 @@ const useDebounce = (value, delay) => {
     return debouncedValue;
 };
 
-const Calculator = ({ selectedCurrency }) => {
+const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
     const [foreignAmount, setForeignAmount] = useState('');
     const [plnAmount, setPlnAmount] = useState('');
     const [operation, setOperation] = useState('sell'); // 'sell' = client wants to buy foreign currency, 'buy' = client wants to sell foreign currency
@@ -26,6 +26,24 @@ const Calculator = ({ selectedCurrency }) => {
     const [currentRates, setCurrentRates] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [showHistory, setShowHistory] = useState(true);
+
+    // Load history from localStorage on component mount
+    useEffect(() => {
+        const savedHistory = localStorage.getItem('calculatorHistory');
+        if (savedHistory) {
+            try {
+                const parsedHistory = JSON.parse(savedHistory);
+                if (Array.isArray(parsedHistory)) {
+                    setHistory(parsedHistory);
+                }
+            } catch (error) {
+                console.error('Error parsing history from localStorage:', error);
+                localStorage.removeItem('calculatorHistory');
+            }
+        }
+    }, []);
 
     // Debounce the foreign amount input
     const debouncedForeignAmount = useDebounce(foreignAmount, 500);
@@ -64,13 +82,18 @@ const Calculator = ({ selectedCurrency }) => {
         setError(null);
 
         try {
-            const result = await postQuote({
+            const request = {
                 code: selectedCurrency,
                 side: operation,
                 amount: amount
-            });
+            };
+            
+            const result = await postQuote(request);
             setQuote(result);
             setPlnAmount(result.total);
+            
+            // Save successful quote to history
+            saveToHistory(request, result);
         } catch (err) {
             setError(err.message || 'Failed to calculate exchange');
             setPlnAmount('');
@@ -89,6 +112,66 @@ const Calculator = ({ selectedCurrency }) => {
             setCurrentRates(rate);
         } catch (err) {
             console.error('Failed to load current rates:', err);
+        }
+    };
+
+    // Save quote request to history
+    const saveToHistory = (request, result) => {
+        const historyEntry = {
+            id: Date.now() + Math.random(), // Simple unique ID
+            timestamp: new Date().toISOString(),
+            request: {
+                currency: request.code,
+                operation: request.side,
+                amount: request.amount
+            },
+            result: {
+                unitRate: result.unitRate,
+                total: result.total,
+                effectiveDate: result.effectiveDate
+            }
+        };
+
+        const newHistory = [historyEntry, ...history].slice(0, 50); // Keep last 50 entries
+        setHistory(newHistory);
+
+        // Save to localStorage
+        try {
+            localStorage.setItem('calculatorHistory', JSON.stringify(newHistory));
+        } catch (error) {
+            console.error('Error saving history to localStorage:', error);
+        }
+    };
+
+    // Load request from history
+    const loadFromHistory = (historyEntry) => {
+        const { currency, operation, amount } = historyEntry.request;
+        
+        // Switch currency if different
+        if (currency !== selectedCurrency && onCurrencyChange) {
+            onCurrencyChange(currency);
+        }
+        
+        // Set operation and amount
+        setOperation(operation);
+        setForeignAmount(amount);
+        
+        // Clear previous results so they get recalculated
+        setPlnAmount('');
+        setQuote(null);
+        setError(null);
+        
+        // Hide history panel
+        setShowHistory(false);
+    };
+
+    // Clear all history
+    const clearHistory = () => {
+        setHistory([]);
+        try {
+            localStorage.removeItem('calculatorHistory');
+        } catch (error) {
+            console.error('Error clearing history from localStorage:', error);
         }
     };
 
@@ -240,8 +323,97 @@ const Calculator = ({ selectedCurrency }) => {
                         {error}
                     </div>
                 )}
+
+                {/* History Section */}
+                <div className="history-section">
+                    <div className="history-header">
+                        <button 
+                            className="history-toggle"
+                            onClick={() => setShowHistory(!showHistory)}
+                        >
+                            <span>📜</span>
+                            <span>History ({history.length})</span>
+                            <span className={`history-arrow ${showHistory ? 'open' : ''}`}>▼</span>
+                        </button>
+                        {history.length > 0 && (
+                            <button 
+                                className="history-clear"
+                                onClick={clearHistory}
+                                title="Clear all history"
+                            >
+                                🗑️
+                            </button>
+                        )}
+                    </div>
+
+                    {showHistory && (
+                        <div className="history-panel">
+                            {history.length === 0 ? (
+                                <div className="history-empty">
+                                    <p>No calculations yet</p>
+                                    <small>Make a quote calculation to see it here</small>
+                                </div>
+                            ) : (
+                                <div className="history-list">
+                                    {history.map((entry) => (
+                                        <HistoryItem
+                                            key={entry.id}
+                                            entry={entry}
+                                            currencyData={currencyData}
+                                            onLoad={() => loadFromHistory(entry)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
+    );
+};
+
+const HistoryItem = ({ entry, currencyData, onLoad }) => {
+    const { request, result, timestamp } = entry;
+    const date = new Date(timestamp);
+    
+    const formatTime = (date) => {
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+    };
+
+    const operationLabel = request.operation === 'sell' ? 'Sell' : 'Buy';
+    const operationColor = request.operation === 'sell' ? 'var(--error-500)' : 'var(--success-500)';
+
+    return (
+        <button className="history-item" onClick={onLoad}>
+            <div className="history-item-header">
+                <div className="history-currency">
+                    <span className="history-flag">{currencyData[request.currency]?.flag}</span>
+                    <span className="history-code">{request.currency}</span>
+                    <span 
+                        className="history-operation"
+                        style={{ color: operationColor }}
+                    >
+                        {operationLabel}
+                    </span>
+                </div>
+                <div className="history-time">{formatTime(date)}</div>
+            </div>
+            <div className="history-item-details">
+                <div className="history-amount">
+                    {request.amount} {currencyData[request.currency]?.symbol} → {parseFloat(result.total).toFixed(2)} zł
+                </div>
+                <div className="history-rate">
+                    Rate: {parseFloat(result.unitRate).toFixed(4)} PLN
+                </div>
+            </div>
+        </button>
     );
 };
 

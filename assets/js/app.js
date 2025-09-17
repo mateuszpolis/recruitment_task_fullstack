@@ -36,7 +36,10 @@ const App = () => {
                 </div>
                 
                 <div className="panel panel-right">
-                    <Calculator selectedCurrency={selectedCurrency} />
+                    <Calculator 
+                        selectedCurrency={selectedCurrency}
+                        onCurrencyChange={setSelectedCurrency}
+                    />
                 </div>
             </main>
         </div>
