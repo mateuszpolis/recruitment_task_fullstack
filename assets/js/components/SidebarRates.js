@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getCurrentRates } from './api';
+import { getExtendedCurrencyData } from '../utils/currencyData';
 
 const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     const currencies = ['EUR', 'USD', 'CZK', 'IDR', 'BRL'];
@@ -41,17 +42,13 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                     ratesMap[rate.code] = rate;
                 });
                 setRates(ratesMap);
-                setLastRefresh(new Date());
-                
-                // Log successful fetch for debugging (can be removed in production)
-                console.log('Rates fetched successfully at', new Date().toLocaleString('en-US', {timeZone: 'Europe/Warsaw'}));
+                setLastRefresh(new Date());                            
             } catch (err) {
                 setError(err.message || 'Failed to fetch rates');
                 console.error('Error fetching rates:', err);
                 
                 // Retry once after 30 seconds if this wasn't already a retry
                 if (!isRetry) {
-                    console.log('Retrying in 30 seconds...');
                     setTimeout(() => fetchRates(true), 30 * 1000);
                 }
             } finally {
@@ -74,8 +71,7 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
             if (day === 0 || day === 6) {
                 const nextRefreshTime = new Date(warsawTime.getTime() + 4 * 60 * 60 * 1000);
                 setNextRefresh(nextRefreshTime);
-                setRefreshReason('Weekend - NBP doesn\'t publish on weekends');
-                console.log('Weekend detected - next refresh in 4 hours');
+                setRefreshReason('Weekend - NBP nie publikuje w weekendy');
                 return setTimeout(fetchRates, 4 * 60 * 60 * 1000); // 4 hours
             }
             
@@ -88,8 +84,8 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                 const minutesUntil11_30 = publish11_30 - currentMinutes;
                 const nextRefreshTime = new Date(warsawTime.getTime() + minutesUntil11_30 * 60 * 1000);
                 setNextRefresh(nextRefreshTime);
-                setRefreshReason('Before publish window - NBP publishes around 11:30-12:30');
-                console.log(`Pre-publish: waiting ${minutesUntil11_30} minutes until 11:30 Warsaw time`);
+                setRefreshReason('Przed publikacją - NBP publikuje około 11:30-12:30');
+            
                 return setTimeout(() => {
                     fetchRates();
                     setupSmartRefresh(); // Re-setup after fetch
@@ -98,8 +94,7 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                 // During publish window: check every 5 minutes
                 const nextRefreshTime = new Date(warsawTime.getTime() + 5 * 60 * 1000);
                 setNextRefresh(nextRefreshTime);
-                setRefreshReason('Publish window - checking for new NBP rates');
-                console.log('In publish window (11:30-12:30) - next refresh in 5 minutes');
+                setRefreshReason('Okno publikacji - sprawdzanie nowych kursów NBP');
                 return setTimeout(() => {
                     fetchRates();
                     setupSmartRefresh(); // Re-setup after fetch
@@ -111,10 +106,8 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                 next11_30.setHours(11, 30, 0, 0);
                 
                 const msUntilNext = next11_30.getTime() - warsawTime.getTime();
-                const hoursUntilNext = Math.round(msUntilNext / (1000 * 60 * 60));
                 setNextRefresh(next11_30);
-                setRefreshReason('After publish window - waiting for next business day');
-                console.log(`Post-publish: waiting ~${hoursUntilNext} hours until next business day 11:30`);
+                setRefreshReason('Po publikacji - oczekiwanie na następny dzień roboczy');                
                 return setTimeout(() => {
                     fetchRates();
                     setupSmartRefresh(); // Re-setup after fetch
@@ -179,24 +172,15 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
         return parseFloat(rate).toFixed(4);
     };
 
-    // Get searchable data for currencies
-    const getSearchableData = (code) => {
-        const currencyData = {
-            'EUR': { name: 'Euro', country: 'European Union' },
-            'USD': { name: 'US Dollar', country: 'United States of America' },
-            'CZK': { name: 'Czech Koruna', country: 'Czech Republic' },
-            'IDR': { name: 'Indonesian Rupiah', country: 'Indonesia' },
-            'BRL': { name: 'Brazilian Real', country: 'Brazil' }
-        };
-        return currencyData[code] || { name: code, country: '' };
-    };
+    // Use shared currency data utility
+    const getCurrencyData = getExtendedCurrencyData;
 
     // Filter currencies based on search term
     const filteredCurrencies = currencies.filter(currency => {
         if (!searchTerm.trim()) return true;
         
         const searchLower = searchTerm.toLowerCase();
-        const data = getSearchableData(currency);
+        const data = getCurrencyData(currency);
         
         return (
             currency.toLowerCase().includes(searchLower) ||
@@ -210,8 +194,8 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     const regularCurrencies = filteredCurrencies.filter(currency => !isFavorite(currency));
 
     const formatTime = (date) => {
-        if (!date) return 'Never';
-        return date.toLocaleTimeString('en-US', { 
+        if (!date) return 'Nigdy';
+        return date.toLocaleTimeString('en-PL', { 
             hour: '2-digit', 
             minute: '2-digit',
             hour12: false 
@@ -223,30 +207,30 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
         const now = new Date();
         const diff = date.getTime() - now.getTime();
         
-        if (diff < 0) return 'overdue';
+        if (diff < 0) return 'przeterminowane';
         
         const minutes = Math.floor(diff / (1000 * 60));
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
         
-        if (days > 0) return `in ${days}d ${hours % 24}h`;
-        if (hours > 0) return `in ${hours}h ${minutes % 60}m`;
-        if (minutes > 0) return `in ${minutes}m`;
-        return 'soon';
+        if (days > 0) return `za ${days}d ${hours % 24}h`;
+        if (hours > 0) return `za ${hours}h ${minutes % 60}m`;
+        if (minutes > 0) return `za ${minutes}m`;
+        return 'wkrótce';
     };
 
     return (
         <div className="sidebar-rates">
-            <h3>Exchange Rates</h3>
+            <h3>💵 Kursy walut</h3>
             
             {/* Refresh Status */}
             <div className="refresh-status">
                 <div className="status-row">
-                    <span className="status-label">Last updated:</span>
+                    <span className="status-label">Ostatnia aktualizacja:</span>
                     <span className="status-value">{formatTime(lastRefresh)}</span>
                 </div>
                 <div className="status-row">
-                    <span className="status-label">Next check:</span>
+                    <span className="status-label">Następna:</span>
                     <span className="status-value">
                         {formatTime(nextRefresh)} 
                         <span className="status-relative">({formatRelativeTime(nextRefresh)})</span>
@@ -261,7 +245,7 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                 <input
                     type="text"
                     className="search-input"
-                    placeholder="Search currencies..."
+                    placeholder="Wyszukaj waluty..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -274,7 +258,7 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                         {favoriteCurrencies.length > 0 && (
                             <div className="favorites-section">
                                 <div className="section-header">
-                                    <span className="section-title">★ Favorites</span>
+                                    <span className="section-title">★ Ulubione</span>
                                     <span className="section-count">({favoriteCurrencies.length})</span>
                                 </div>
                                 {favoriteCurrencies.map(currency => (
@@ -289,6 +273,7 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                                         onSelect={onCurrencySelect}
                                         onToggleFavorite={toggleFavorite}
                                         formatRate={formatRate}
+                                        getCurrencyData={getCurrencyData}
                                     />
                                 ))}
                             </div>
@@ -299,7 +284,7 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                             <div className="regular-section">
                                 {favoriteCurrencies.length > 0 && (
                                     <div className="section-header">
-                                        <span className="section-title">All Currencies</span>
+                                        <span className="section-title">Wszystkie waluty</span>
                                         <span className="section-count">({regularCurrencies.length})</span>
                                     </div>
                                 )}
@@ -315,6 +300,7 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                                         onSelect={onCurrencySelect}
                                         onToggleFavorite={toggleFavorite}
                                         formatRate={formatRate}
+                                        getCurrencyData={getCurrencyData}
                                     />
                                 ))}
                             </div>
@@ -322,8 +308,8 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                     </>
                 ) : (
                     <div className="no-results">
-                        <span>No currencies found</span>
-                        <small>Try searching by currency code, name, or country</small>
+                        <span>Nie znaleziono walut</span>
+                        <small>Spróbuj wyszukać po kodzie, nazwie lub kraju</small>
                     </div>
                 )}
             </div>
@@ -340,12 +326,15 @@ const CurrencyItem = ({
     isFavorite, 
     onSelect, 
     onToggleFavorite, 
-    formatRate 
+    formatRate,
+    getCurrencyData
 }) => {
     const handleFavoriteClick = (e) => {
         e.stopPropagation(); // Prevent triggering the currency selection
         onToggleFavorite(currency);
     };
+
+    const currencyData = getCurrencyData(currency);
 
     return (
         <button
@@ -355,18 +344,20 @@ const CurrencyItem = ({
         >
             <div className="currency-header">
                 <div className="currency-flag">
-                    <CurrencyFlag code={currency} />
+                    <span className="flag-emoji" role="img" aria-label={`${currency} flag`}>
+                        {currencyData.flag}
+                    </span>
                 </div>
                 <div className="currency-info">
                     <span className="currency-code">{currency}</span>
                     <span className="currency-name">
-                        {getCurrencyName(currency)}
+                        {currencyData.name}
                     </span>
                 </div>
                 <button
                     className="favorite-button"
                     onClick={handleFavoriteClick}
-                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    title={isFavorite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
                     disabled={isLoading}
                 >
                     {isFavorite ? (
@@ -378,65 +369,38 @@ const CurrencyItem = ({
             </div>
             
             {isLoading ? (
-                <div className="rates-loading">Loading...</div>
+                <div className="rates-loading">Ładowanie...</div>
             ) : hasError ? (
-                <div className="rates-error">Error</div>
+                <div className="rates-error">Błąd</div>
             ) : rate ? (
                 <div className="currency-rates">
                     <div className="rate-row">
-                        <span className="rate-label">Mid</span>
+                        <span className="rate-label">Średnia</span>
                         <span className="rate-value rate-mid">{formatRate(rate.mid)}</span>
                     </div>
                     <div className="rate-row">
-                        <span className="rate-label">Buy</span>
+                        <span className="rate-label">Kupno</span>
                         <span 
                             className={`rate-value rate-buy ${!rate.buy ? 'rate-unavailable' : ''}`}
                         >
-                            {rate.buy ? formatRate(rate.buy) : 'N/A'}
+                            {rate.buy ? formatRate(rate.buy) : 'N/D'}
                         </span>
                     </div>
                     <div className="rate-row">
-                        <span className="rate-label">Sell</span>
+                        <span className="rate-label">Sprzedaż</span>
                         <span 
                             className={`rate-value rate-sell ${!rate.sell ? 'rate-unavailable' : ''}`}
                         >
-                            {rate.sell ? formatRate(rate.sell) : 'N/A'}
+                            {rate.sell ? formatRate(rate.sell) : 'N/D'}
                         </span>
                     </div>
                 </div>
             ) : (
-                <div className="rates-error">No data</div>
+                <div className="rates-error">Brak danych</div>
             )}
         </button>
     );
 };
 
-const CurrencyFlag = ({ code }) => {
-    // Simple flag component using Unicode flag emojis
-    const flags = {
-        'EUR': '🇪🇺', // EU flag
-        'USD': '🇺🇸', // US flag
-        'CZK': '🇨🇿', // Czech Republic flag
-        'IDR': '🇮🇩', // Indonesia flag
-        'BRL': '🇧🇷'  // Brazil flag
-    };
-    
-    return (
-        <span className="flag-emoji" role="img" aria-label={`${code} flag`}>
-            {flags[code] || '🏳️'}
-        </span>
-    );
-};
-
-const getCurrencyName = (code) => {
-    const names = {
-        'EUR': 'Euro',
-        'USD': 'US Dollar',
-        'CZK': 'Czech Koruna',
-        'IDR': 'Indonesian Rupiah',
-        'BRL': 'Brazilian Real'
-    };
-    return names[code] || code;
-};
 
 export default SidebarRates;

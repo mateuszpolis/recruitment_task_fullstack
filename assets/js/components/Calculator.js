@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { postQuote, getCurrentRates } from './api';
+import { getCurrencyData } from '../utils/currencyData';
 
 // Custom useDebounce hook
 const useDebounce = (value, delay) => {
@@ -48,15 +49,8 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
     // Debounce the foreign amount input
     const debouncedForeignAmount = useDebounce(foreignAmount, 500);
 
-    // Currency data
-    const currencyData = {
-        'PLN': { name: 'Polish Złoty', flag: '🇵🇱', symbol: 'zł' },
-        'EUR': { name: 'Euro', flag: '🇪🇺', symbol: '€' },
-        'USD': { name: 'US Dollar', flag: '🇺🇸', symbol: '$' },
-        'CZK': { name: 'Czech Koruna', flag: '🇨🇿', symbol: 'Kč' },
-        'IDR': { name: 'Indonesian Rupiah', flag: '🇮🇩', symbol: 'Rp' },
-        'BRL': { name: 'Brazilian Real', flag: '🇧🇷', symbol: 'R$' }
-    };
+    // Use shared currency data utility
+    const getCurrencyInfo = (code) => getCurrencyData(code);
 
     const handleSwap = () => {
         setOperation(operation === 'sell' ? 'buy' : 'sell');
@@ -196,15 +190,15 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
         return (
             <div className="calculator">
                 <div className="calculator-placeholder">
-                    <h3>Exchange Calculator</h3>
-                    <p>Select a currency to start exchanging</p>
+                    <h3>Kalkulator wymiany</h3>
+                    <p>Wybierz walutę, aby rozpocząć wymianę</p>
                 </div>
             </div>
         );
     }
 
     const rate = currentRates ? (operation === 'sell' ? currentRates.sell : currentRates.buy) : null;
-    const operationTitle = operation === 'sell' ? 'Sell' : 'Buy';
+    const operationTitle = operation === 'sell' ? '🏷️ Sprzedaż' : '💰Kupno';
 
     return (
         <div className="calculator">
@@ -215,17 +209,17 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                 <div className="currency-card currency-card--foreign">
                     <div className="transaction-label">
                         {operation === 'sell' ? 
-                            <>Client wants to buy {selectedCurrency}</> : 
-                            <>Client brings {selectedCurrency}</>
+                            <>Klient chce kupić {selectedCurrency}</> : 
+                            <>Klient przynosi {selectedCurrency}</>
                         }
                     </div>
                     <div className="currency-header">
                         <div className="currency-flag-large">
-                            {currencyData[selectedCurrency]?.flag}
+                            {getCurrencyInfo(selectedCurrency).flag}
                         </div>
                         <div className="currency-info">
                             <div className="currency-code-large">{selectedCurrency}</div>
-                            <div className="currency-name-small">{currencyData[selectedCurrency]?.name}</div>
+                            <div className="currency-name-small">{getCurrencyInfo(selectedCurrency).name}</div>
                         </div>
                         <div className="currency-amount">
                             <input
@@ -237,7 +231,7 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                                 onChange={(e) => handleForeignAmountChange(e.target.value)}
                                 placeholder="0"
                             />
-                            <span className="currency-symbol">{currencyData[selectedCurrency]?.symbol}</span>
+                            <span className="currency-symbol">{getCurrencyInfo(selectedCurrency).symbol}</span>
                         </div>
                     </div>
                 </div>
@@ -265,17 +259,17 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                 <div className="currency-card currency-card--pln">
                     <div className="transaction-label">
                         {operation === 'sell' ? 
-                            <>Client pays PLN</> : 
-                            <>We pay client PLN</>
+                            <>Klient płaci PLN</> : 
+                            <>Płacimy klientowi PLN</>
                         }
                     </div>
                     <div className="currency-header">
                         <div className="currency-flag-large">
-                            {currencyData['PLN']?.flag}
+                            {getCurrencyInfo('PLN').flag}
                         </div>
                         <div className="currency-info">
                             <div className="currency-code-large">PLN</div>
-                            <div className="currency-name-small">{currencyData['PLN']?.name}</div>
+                            <div className="currency-name-small">{getCurrencyInfo('PLN').name}</div>
                         </div>
                         <div className="currency-amount">
                             {loading ? (
@@ -288,7 +282,7 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                                     }
                                 </div>
                             )}
-                            <span className="currency-symbol">{currencyData['PLN']?.symbol}</span>
+                            <span className="currency-symbol">{getCurrencyInfo('PLN').symbol}</span>
                         </div>
                     </div>
                 </div>
@@ -297,21 +291,21 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                 {rate && (
                     <div className="rate-info-card">
                         <div className="rate-header">
-                            <strong>Exchange Rate ({operation === 'sell' ? 'Selling' : 'Buying'} {selectedCurrency})</strong>
+                            <strong>Kurs wymiany ({operation === 'sell' ? 'Sprzedaż' : 'Kupno'} {selectedCurrency})</strong>
                         </div>
                         <div className="rate-line">
                             1 {selectedCurrency} = {parseFloat(rate).toFixed(4)} PLN
                         </div>
                         {quote && (
                             <div className="rate-timestamp">
-                                Rate from {quote.effectiveDate}
+                                Kurs z {quote.effectiveDate}
                             </div>
                         )}
                         <div className="transaction-summary">
                             {operation === 'sell' ? (
-                                <>We SELL {selectedCurrency}: Client brings PLN, we give {selectedCurrency}</>
+                                <>Sprzedajemy {selectedCurrency}: Klient przynosi PLN, dajemy {selectedCurrency}</>
                             ) : (
-                                <>We BUY {selectedCurrency}: Client brings {selectedCurrency}, we give PLN</>
+                                <>Kupujemy {selectedCurrency}: Klient przynosi {selectedCurrency}, dajemy PLN</>
                             )}
                         </div>
                     </div>
@@ -339,7 +333,7 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                             <button 
                                 className="history-clear"
                                 onClick={clearHistory}
-                                title="Clear all history"
+                                title="Wyczyść historię"
                             >
                                 🗑️
                             </button>
@@ -350,8 +344,8 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                         <div className="history-panel">
                             {history.length === 0 ? (
                                 <div className="history-empty">
-                                    <p>No calculations yet</p>
-                                    <small>Make a quote calculation to see it here</small>
+                                    <p>Brak obliczeń</p>
+                                    <small>Wykonaj obliczenie kursu, aby zobaczyć je tutaj</small>
                                 </div>
                             ) : (
                                 <div className="history-list">
@@ -359,7 +353,7 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                                         <HistoryItem
                                             key={entry.id}
                                             entry={entry}
-                                            currencyData={currencyData}
+                                            getCurrencyInfo={getCurrencyInfo}
                                             onLoad={() => loadFromHistory(entry)}
                                         />
                                     ))}
@@ -373,12 +367,12 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
     );
 };
 
-const HistoryItem = ({ entry, currencyData, onLoad }) => {
+const HistoryItem = ({ entry, getCurrencyInfo, onLoad }) => {
     const { request, result, timestamp } = entry;
     const date = new Date(timestamp);
     
     const formatTime = (date) => {
-        return date.toLocaleString('en-US', {
+        return date.toLocaleString('pl-PL', {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
@@ -387,14 +381,15 @@ const HistoryItem = ({ entry, currencyData, onLoad }) => {
         });
     };
 
-    const operationLabel = request.operation === 'sell' ? 'Sell' : 'Buy';
+    const operationLabel = request.operation === 'sell' ? 'Sprzedaż' : 'Kupno';
     const operationColor = request.operation === 'sell' ? 'var(--error-500)' : 'var(--success-500)';
+    const currencyInfo = getCurrencyInfo(request.currency);
 
     return (
         <button className="history-item" onClick={onLoad}>
             <div className="history-item-header">
                 <div className="history-currency">
-                    <span className="history-flag">{currencyData[request.currency]?.flag}</span>
+                    <span className="history-flag">{currencyInfo.flag}</span>
                     <span className="history-code">{request.currency}</span>
                     <span 
                         className="history-operation"
@@ -407,10 +402,10 @@ const HistoryItem = ({ entry, currencyData, onLoad }) => {
             </div>
             <div className="history-item-details">
                 <div className="history-amount">
-                    {request.amount} {currencyData[request.currency]?.symbol} → {parseFloat(result.total).toFixed(2)} zł
+                    {request.amount} {currencyInfo.symbol} → {parseFloat(result.total).toFixed(2)} zł
                 </div>
                 <div className="history-rate">
-                    Rate: {parseFloat(result.unitRate).toFixed(4)} PLN
+                    Kurs: {parseFloat(result.unitRate).toFixed(4)} PLN
                 </div>
             </div>
         </button>

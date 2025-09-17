@@ -139,7 +139,7 @@ const RateChart = ({ selectedCurrency }) => {
         return (
             <div className="rate-chart">
                 <div className="chart-placeholder">
-                    <p>Select a currency to view its chart</p>
+                    <p>Wybierz walutę, aby zobaczyć jej wykres</p>
                 </div>
             </div>
         );
@@ -149,10 +149,10 @@ const RateChart = ({ selectedCurrency }) => {
         return (
             <div className="rate-chart">
                 <div className="chart-header">
-                    <h3>{selectedCurrency} History (14 days)</h3>
+                    <h3>📊 {selectedCurrency} - Historia (14 dni)</h3>
                 </div>
                 <div className="chart-placeholder">
-                    <p>Loading chart data...</p>
+                    <p>Ładowanie danych wykresu...</p>
                 </div>
             </div>
         );
@@ -162,12 +162,12 @@ const RateChart = ({ selectedCurrency }) => {
         return (
             <div className="rate-chart">
                 <div className="chart-header">
-                    <h3>{selectedCurrency} History (14 days)</h3>
+                    <h3>📊 {selectedCurrency} - Historia (14 dni)</h3>
                 </div>
                 <div className="chart-error">
-                    <p>Error: {error}</p>
+                    <p>Błąd: {error}</p>
                     <button className="button button--secondary" onClick={fetchHistory}>
-                        Retry
+                        Ponów
                     </button>
                 </div>
             </div>
@@ -227,12 +227,12 @@ const RateChart = ({ selectedCurrency }) => {
     return (
         <div className="rate-chart">
             <div className="chart-header">
-                <h3>{selectedCurrency} History (14 days)</h3>                
+                <h3>📊 {selectedCurrency} - Historia (14 dni)</h3>                
                 <div className="date-navigation">
                 <button 
                     className="date-nav-button" 
                     onClick={handlePreviousDay}
-                    title="Previous day"
+                    title="Poprzedni dzień"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="15,18 9,12 15,6"></polyline>
@@ -243,7 +243,7 @@ const RateChart = ({ selectedCurrency }) => {
                     <button 
                         className="date-display-button"
                         onClick={() => setShowDatePicker(!showDatePicker)}
-                        title="Select date"
+                        title="Wybierz datę"
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -251,7 +251,7 @@ const RateChart = ({ selectedCurrency }) => {
                             <line x1="8" y1="2" x2="8" y2="6"></line>
                             <line x1="3" y1="10" x2="21" y2="10"></line>
                         </svg>
-                        <span>{new Date(selectedDate).toLocaleDateString('en-US', { 
+                        <span>{new Date(selectedDate).toLocaleDateString('pl-PL', { 
                             month: 'short', 
                             day: 'numeric', 
                             year: 'numeric' 
@@ -277,7 +277,7 @@ const RateChart = ({ selectedCurrency }) => {
                     className="date-nav-button" 
                     onClick={handleNextDay}
                     disabled={!canGoNext()}
-                    title="Next day"
+                    title="Następny dzień"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="9,18 15,12 9,6"></polyline>
@@ -390,7 +390,7 @@ const RateChart = ({ selectedCurrency }) => {
                         labels.sort((a, b) => a.x - b.x);
                         
                         return labels.map((label, index) => {
-                            const shortDate = new Date(label.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            const shortDate = new Date(label.date).toLocaleDateString('pl-PL', { month: 'short', day: 'numeric' });
                             return (
                                 <g key={`label-${index}`}>
                                     <line 
@@ -424,7 +424,7 @@ const RateChart = ({ selectedCurrency }) => {
                         fill="var(--gray-700)"
                         transform={`rotate(-90, 15, ${marginTop + chartHeight / 2})`}
                     >
-                        Rate (PLN)
+                        Kurs (PLN)
                     </text>
                     
                     {/* Mid rate line (gray) */}
@@ -535,16 +535,16 @@ const RateChart = ({ selectedCurrency }) => {
                         const rateValue = type === 'mid' ? item.mid : 
                                         type === 'buy' ? item.buy : 
                                         item.sell;
-                        const rateLabel = type === 'mid' ? 'Mid Rate (NBP)' :
-                                        type === 'buy' ? 'Buy Rate' :
-                                        'Sell Rate';
+                        const rateLabel = type === 'mid' ? 'Średnia (NBP)' :
+                                        type === 'buy' ? 'Kupno' :
+                                        'Sprzedaż';
                         const rateColor = type === 'mid' ? 'var(--gray-500)' :
                                         type === 'buy' ? 'var(--success-500)' :
                                         'var(--error-500)';
                         
                         return (
                             <div className="tooltip-content">
-                                <div className="tooltip-date">{new Date(item.date).toLocaleDateString('en-US', { 
+                                <div className="tooltip-date">{new Date(item.date).toLocaleDateString('pl-PL', { 
                                     weekday: 'short',
                                     month: 'short', 
                                     day: 'numeric',
@@ -561,10 +561,10 @@ const RateChart = ({ selectedCurrency }) => {
                                 {type === 'mid' && (
                                     <div className="tooltip-extra">
                                         {item.buy && (
-                                            <div>Buy: {parseFloat(item.buy).toFixed(4)} PLN</div>
+                                            <div>Kupno: {parseFloat(item.buy).toFixed(4)} PLN</div>
                                         )}
                                         {item.sell && (
-                                            <div>Sell: {parseFloat(item.sell).toFixed(4)} PLN</div>
+                                            <div>Sprzedaż: {parseFloat(item.sell).toFixed(4)} PLN</div>
                                         )}
                                     </div>
                                 )}
@@ -578,18 +578,18 @@ const RateChart = ({ selectedCurrency }) => {
             <div className="chart-legend">
                 <div className="legend-item">
                     <div className="legend-line legend-line--mid"></div>
-                    <span>Mid Rate (NBP)</span>
+                    <span>Średnia (NBP)</span>
                 </div>
                 {historyData.some(item => item.buy) && (
                     <div className="legend-item">
                         <div className="legend-line legend-line--buy"></div>
-                        <span>Buy Rate</span>
+                        <span>Kupno</span>
                     </div>
                 )}
                 {historyData.some(item => item.sell) && (
                     <div className="legend-item">
                         <div className="legend-line legend-line--sell"></div>
-                        <span>Sell Rate</span>
+                        <span>Sprzedaż</span>
                     </div>
                 )}
             </div>
@@ -600,10 +600,10 @@ const RateChart = ({ selectedCurrency }) => {
                         <table className="table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Mid Rate</th>
-                                    <th>Buy Rate</th>
-                                    <th>Sell Rate</th>
+                                    <th>Data</th>
+                                    <th>Średnia</th>
+                                    <th>Kupno</th>
+                                    <th>Sprzedaż</th>
                                 </tr>
                             </thead>
                             <tbody className="table-body">

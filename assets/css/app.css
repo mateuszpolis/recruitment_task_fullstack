@@ -647,7 +647,7 @@
   .chart-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: start;
     margin-bottom: var(--space-4);
     flex-shrink: 0;
   }
@@ -1035,7 +1035,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    padding: var(--space-4) 0;
   }
 
   .exchange-title {
