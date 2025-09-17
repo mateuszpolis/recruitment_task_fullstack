@@ -6,14 +6,16 @@ const api = axios.create({
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
+        Accept: 'application/json',
+    },
 });
 
 // Request interceptor for debugging (optional)
 api.interceptors.request.use(
     (config) => {
-        console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        console.log(
+            `API Request: ${config.method?.toUpperCase()} ${config.url}`
+        );
         return config;
     },
     (error) => Promise.reject(error)
@@ -28,29 +30,32 @@ api.interceptors.response.use(
             message: 'An error occurred',
             status: null,
             code: null,
-            details: null
+            details: null,
         };
 
         if (error.response) {
             // Server responded with error status
             const { status, data } = error.response;
             normalizedError.status = status;
-            normalizedError.message = data?.error?.message || `HTTP ${status} Error`;
+            normalizedError.message =
+                data?.error?.message || `HTTP ${status} Error`;
             normalizedError.code = data?.error?.code || null;
             normalizedError.details = data?.error?.details || null;
         } else if (error.request) {
             // Network error (no response received)
-            normalizedError.message = 'Network error - please check your connection';
+            normalizedError.message =
+                'Network error - please check your connection';
             normalizedError.code = 'NETWORK_ERROR';
         } else {
             // Request setup error
-            normalizedError.message = error.message || 'Request configuration error';
+            normalizedError.message =
+                error.message || 'Request configuration error';
             normalizedError.code = 'CONFIG_ERROR';
         }
 
         // Preserve original error for debugging
         normalizedError.originalError = error;
-        
+
         return Promise.reject(normalizedError);
     }
 );
@@ -63,7 +68,7 @@ api.interceptors.response.use(
 export const getCurrentRates = async (codes) => {
     const codesParam = Array.isArray(codes) ? codes.join(',') : codes;
     const params = codesParam ? { codes: codesParam } : {};
-    
+
     const response = await api.get('/api/rates/current', { params });
     return response.data;
 };
@@ -81,12 +86,15 @@ export const getHistory = async (code, date, days = 14) => {
             message: 'Currency code and date are required',
             code: 'VALIDATION_ERROR',
             status: null,
-            details: null
+            details: null,
         };
     }
 
     const params = { date, days: days.toString() };
-    const response = await api.get(`/api/rates/${encodeURIComponent(code)}/history`, { params });
+    const response = await api.get(
+        `/api/rates/${encodeURIComponent(code)}/history`,
+        { params }
+    );
     return response.data;
 };
 
@@ -104,14 +112,14 @@ export const postQuote = async ({ code, side, amount }) => {
             message: 'Currency code, side, and amount are required',
             code: 'VALIDATION_ERROR',
             status: null,
-            details: null
+            details: null,
         };
     }
 
     const requestBody = {
         code: code.toString(),
         side: side.toString(),
-        amount: amount.toString()
+        amount: amount.toString(),
     };
 
     const response = await api.post('/api/quote', requestBody);

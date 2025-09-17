@@ -40,7 +40,10 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                     setHistory(parsedHistory);
                 }
             } catch (error) {
-                console.error('Error parsing history from localStorage:', error);
+                console.error(
+                    'Error parsing history from localStorage:',
+                    error
+                );
                 localStorage.removeItem('calculatorHistory');
             }
         }
@@ -79,13 +82,13 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
             const request = {
                 code: selectedCurrency,
                 side: operation,
-                amount: amount
+                amount: amount,
             };
-            
+
             const result = await postQuote(request);
             setQuote(result);
             setPlnAmount(result.total);
-            
+
             // Save successful quote to history
             saveToHistory(request, result);
         } catch (err) {
@@ -102,7 +105,7 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
 
         try {
             const rates = await getCurrentRates([selectedCurrency]);
-            const rate = rates.rates?.find(r => r.code === selectedCurrency);
+            const rate = rates.rates?.find((r) => r.code === selectedCurrency);
             setCurrentRates(rate);
         } catch (err) {
             console.error('Failed to load current rates:', err);
@@ -117,13 +120,13 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
             request: {
                 currency: request.code,
                 operation: request.side,
-                amount: request.amount
+                amount: request.amount,
             },
             result: {
                 unitRate: result.unitRate,
                 total: result.total,
-                effectiveDate: result.effectiveDate
-            }
+                effectiveDate: result.effectiveDate,
+            },
         };
 
         const newHistory = [historyEntry, ...history].slice(0, 50); // Keep last 50 entries
@@ -131,7 +134,10 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
 
         // Save to localStorage
         try {
-            localStorage.setItem('calculatorHistory', JSON.stringify(newHistory));
+            localStorage.setItem(
+                'calculatorHistory',
+                JSON.stringify(newHistory)
+            );
         } catch (error) {
             console.error('Error saving history to localStorage:', error);
         }
@@ -140,21 +146,21 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
     // Load request from history
     const loadFromHistory = (historyEntry) => {
         const { currency, operation, amount } = historyEntry.request;
-        
+
         // Switch currency if different
         if (currency !== selectedCurrency && onCurrencyChange) {
             onCurrencyChange(currency);
         }
-        
+
         // Set operation and amount
         setOperation(operation);
         setForeignAmount(amount);
-        
+
         // Clear previous results so they get recalculated
         setPlnAmount('');
         setQuote(null);
         setError(null);
-        
+
         // Hide history panel
         setShowHistory(false);
     };
@@ -197,29 +203,40 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
         );
     }
 
-    const rate = currentRates ? (operation === 'sell' ? currentRates.sell : currentRates.buy) : null;
+    const rate = currentRates
+        ? operation === 'sell'
+            ? currentRates.sell
+            : currentRates.buy
+        : null;
     const operationTitle = operation === 'sell' ? '🏷️ Sprzedaż' : '💰Kupno';
 
     return (
         <div className="calculator">
             <div className="exchange-container">
-                <h3 className="exchange-title">{operationTitle} {selectedCurrency}</h3>
-                
+                <h3 className="exchange-title">
+                    {operationTitle} {selectedCurrency}
+                </h3>
+
                 {/* Foreign Currency Card - Always the input */}
                 <div className="currency-card currency-card--foreign">
                     <div className="transaction-label">
-                        {operation === 'sell' ? 
-                            <>Klient chce kupić {selectedCurrency}</> : 
+                        {operation === 'sell' ? (
+                            <>Klient chce kupić {selectedCurrency}</>
+                        ) : (
                             <>Klient przynosi {selectedCurrency}</>
-                        }
+                        )}
                     </div>
                     <div className="currency-header">
                         <div className="currency-flag-large">
                             {getCurrencyInfo(selectedCurrency).flag}
                         </div>
                         <div className="currency-info">
-                            <div className="currency-code-large">{selectedCurrency}</div>
-                            <div className="currency-name-small">{getCurrencyInfo(selectedCurrency).name}</div>
+                            <div className="currency-code-large">
+                                {selectedCurrency}
+                            </div>
+                            <div className="currency-name-small">
+                                {getCurrencyInfo(selectedCurrency).name}
+                            </div>
                         </div>
                         <div className="currency-amount">
                             <input
@@ -228,27 +245,36 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                                 min="0"
                                 className="amount-input"
                                 value={foreignAmount}
-                                onChange={(e) => handleForeignAmountChange(e.target.value)}
+                                onChange={(e) =>
+                                    handleForeignAmountChange(e.target.value)
+                                }
                                 placeholder="0"
                             />
-                            <span className="currency-symbol">{getCurrencyInfo(selectedCurrency).symbol}</span>
+                            <span className="currency-symbol">
+                                {getCurrencyInfo(selectedCurrency).symbol}
+                            </span>
                         </div>
                     </div>
                 </div>
 
                 {/* Swap Arrow */}
                 <div className="swap-container">
-                    <button 
+                    <button
                         className={`swap-button ${operation === 'buy' ? 'rotated' : ''}`}
                         onClick={handleSwap}
                         disabled={loading}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path 
-                                d="M7 10L12 15L17 10" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                        >
+                            <path
+                                d="M7 10L12 15L17 10"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
                                 strokeLinejoin="round"
                             />
                         </svg>
@@ -258,10 +284,11 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                 {/* PLN Currency Card - Always the calculated result */}
                 <div className="currency-card currency-card--pln">
                     <div className="transaction-label">
-                        {operation === 'sell' ? 
-                            <>Klient płaci PLN</> : 
+                        {operation === 'sell' ? (
+                            <>Klient płaci PLN</>
+                        ) : (
                             <>Płacimy klientowi PLN</>
-                        }
+                        )}
                     </div>
                     <div className="currency-header">
                         <div className="currency-flag-large">
@@ -269,20 +296,23 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                         </div>
                         <div className="currency-info">
                             <div className="currency-code-large">PLN</div>
-                            <div className="currency-name-small">{getCurrencyInfo('PLN').name}</div>
+                            <div className="currency-name-small">
+                                {getCurrencyInfo('PLN').name}
+                            </div>
                         </div>
                         <div className="currency-amount">
                             {loading ? (
                                 <div className="loading-placeholder"></div>
                             ) : (
                                 <div className="amount-display">
-                                    {plnAmount ? 
-                                        `${operation === 'sell' ? '+' : '-'}${parseFloat(plnAmount).toFixed(2)}` : 
-                                        '0'
-                                    }
+                                    {plnAmount
+                                        ? `${operation === 'sell' ? '+' : '-'}${parseFloat(plnAmount).toFixed(2)}`
+                                        : '0'}
                                 </div>
                             )}
-                            <span className="currency-symbol">{getCurrencyInfo('PLN').symbol}</span>
+                            <span className="currency-symbol">
+                                {getCurrencyInfo('PLN').symbol}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -291,10 +321,15 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                 {rate && (
                     <div className="rate-info-card">
                         <div className="rate-header">
-                            <strong>Kurs wymiany ({operation === 'sell' ? 'Sprzedaż' : 'Kupno'} {selectedCurrency})</strong>
+                            <strong>
+                                Kurs wymiany (
+                                {operation === 'sell' ? 'Sprzedaż' : 'Kupno'}{' '}
+                                {selectedCurrency})
+                            </strong>
                         </div>
                         <div className="rate-line">
-                            1 {selectedCurrency} = {parseFloat(rate).toFixed(4)} PLN
+                            1 {selectedCurrency} = {parseFloat(rate).toFixed(4)}{' '}
+                            PLN
                         </div>
                         {quote && (
                             <div className="rate-timestamp">
@@ -303,34 +338,40 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                         )}
                         <div className="transaction-summary">
                             {operation === 'sell' ? (
-                                <>Sprzedajemy {selectedCurrency}: Klient przynosi PLN, dajemy {selectedCurrency}</>
+                                <>
+                                    Sprzedajemy {selectedCurrency}: Klient
+                                    przynosi PLN, dajemy {selectedCurrency}
+                                </>
                             ) : (
-                                <>Kupujemy {selectedCurrency}: Klient przynosi {selectedCurrency}, dajemy PLN</>
+                                <>
+                                    Kupujemy {selectedCurrency}: Klient przynosi{' '}
+                                    {selectedCurrency}, dajemy PLN
+                                </>
                             )}
                         </div>
                     </div>
                 )}
 
                 {/* Error Display */}
-                {error && (
-                    <div className="exchange-error">
-                        {error}
-                    </div>
-                )}
+                {error && <div className="exchange-error">{error}</div>}
 
                 {/* History Section */}
                 <div className="history-section">
                     <div className="history-header">
-                        <button 
+                        <button
                             className="history-toggle"
                             onClick={() => setShowHistory(!showHistory)}
                         >
                             <span>📜</span>
                             <span>History ({history.length})</span>
-                            <span className={`history-arrow ${showHistory ? 'open' : ''}`}>▼</span>
+                            <span
+                                className={`history-arrow ${showHistory ? 'open' : ''}`}
+                            >
+                                ▼
+                            </span>
                         </button>
                         {history.length > 0 && (
-                            <button 
+                            <button
                                 className="history-clear"
                                 onClick={clearHistory}
                                 title="Wyczyść historię"
@@ -345,7 +386,10 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                             {history.length === 0 ? (
                                 <div className="history-empty">
                                     <p>Brak obliczeń</p>
-                                    <small>Wykonaj obliczenie kursu, aby zobaczyć je tutaj</small>
+                                    <small>
+                                        Wykonaj obliczenie kursu, aby zobaczyć
+                                        je tutaj
+                                    </small>
                                 </div>
                             ) : (
                                 <div className="history-list">
@@ -354,7 +398,9 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
                                             key={entry.id}
                                             entry={entry}
                                             getCurrencyInfo={getCurrencyInfo}
-                                            onLoad={() => loadFromHistory(entry)}
+                                            onLoad={() =>
+                                                loadFromHistory(entry)
+                                            }
                                         />
                                     ))}
                                 </div>
@@ -370,19 +416,22 @@ const Calculator = ({ selectedCurrency, onCurrencyChange }) => {
 const HistoryItem = ({ entry, getCurrencyInfo, onLoad }) => {
     const { request, result, timestamp } = entry;
     const date = new Date(timestamp);
-    
+
     const formatTime = (date) => {
         return date.toLocaleString('pl-PL', {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            hour12: false
+            hour12: false,
         });
     };
 
     const operationLabel = request.operation === 'sell' ? 'Sprzedaż' : 'Kupno';
-    const operationColor = request.operation === 'sell' ? 'var(--error-500)' : 'var(--success-500)';
+    const operationColor =
+        request.operation === 'sell'
+            ? 'var(--error-500)'
+            : 'var(--success-500)';
     const currencyInfo = getCurrencyInfo(request.currency);
 
     return (
@@ -391,7 +440,7 @@ const HistoryItem = ({ entry, getCurrencyInfo, onLoad }) => {
                 <div className="history-currency">
                     <span className="history-flag">{currencyInfo.flag}</span>
                     <span className="history-code">{request.currency}</span>
-                    <span 
+                    <span
                         className="history-operation"
                         style={{ color: operationColor }}
                     >
@@ -402,7 +451,8 @@ const HistoryItem = ({ entry, getCurrencyInfo, onLoad }) => {
             </div>
             <div className="history-item-details">
                 <div className="history-amount">
-                    {request.amount} {currencyInfo.symbol} → {parseFloat(result.total).toFixed(2)} zł
+                    {request.amount} {currencyInfo.symbol} →{' '}
+                    {parseFloat(result.total).toFixed(2)} zł
                 </div>
                 <div className="history-rate">
                     Kurs: {parseFloat(result.unitRate).toFixed(4)} PLN

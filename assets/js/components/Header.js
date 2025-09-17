@@ -20,7 +20,7 @@ const Header = () => {
         };
 
         fetchRateInfo();
-        
+
         // Update every minute to show fresh "updated" time
         const interval = setInterval(() => {
             setLastUpdated(new Date());
@@ -31,10 +31,10 @@ const Header = () => {
 
     const formatTime = (date) => {
         if (!date) return '';
-        return date.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
             minute: '2-digit',
-            hour12: false 
+            hour12: false,
         });
     };
 
@@ -49,10 +49,10 @@ const Header = () => {
                 <div className="header-left">
                     <h1>Exchange Office Dashboard</h1>
                     <p className="header-description">
-                        Real-time currency exchange rates powered by 
-                        <a 
-                            href="https://api.nbp.pl/" 
-                            target="_blank" 
+                        Real-time currency exchange rates powered by
+                        <a
+                            href="https://api.nbp.pl/"
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="nbp-link"
                         >
@@ -60,13 +60,20 @@ const Header = () => {
                         </a>
                     </p>
                     <div className="base-currency-info">
-                        <span className="base-currency-flag" role="img" aria-label="Poland flag">🇵🇱</span>
+                        <span
+                            className="base-currency-flag"
+                            role="img"
+                            aria-label="Poland flag"
+                        >
+                            🇵🇱
+                        </span>
                         <span className="base-currency-text">
-                            All rates quoted in <strong>PLN</strong> (Polish Złoty)
+                            All rates quoted in <strong>PLN</strong> (Polish
+                            Złoty)
                         </span>
                     </div>
                 </div>
-                
+
                 <div className="header-right">
                     <div className="rate-info">
                         {effectiveDate && (

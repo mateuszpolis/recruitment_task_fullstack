@@ -23,7 +23,10 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                     setFavorites(parsedFavorites);
                 }
             } catch (error) {
-                console.error('Error parsing favorites from localStorage:', error);
+                console.error(
+                    'Error parsing favorites from localStorage:',
+                    error
+                );
                 localStorage.removeItem('currencyFavorites');
             }
         }
@@ -35,18 +38,18 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                 if (!isRetry) setLoading(true);
                 setError(null);
                 const response = await getCurrentRates(currencies);
-                
+
                 // Convert array to object for easier lookup
                 const ratesMap = {};
-                response.rates.forEach(rate => {
+                response.rates.forEach((rate) => {
                     ratesMap[rate.code] = rate;
                 });
                 setRates(ratesMap);
-                setLastRefresh(new Date());                            
+                setLastRefresh(new Date());
             } catch (err) {
                 setError(err.message || 'Failed to fetch rates');
                 console.error('Error fetching rates:', err);
-                
+
                 // Retry once after 30 seconds if this wasn't already a retry
                 if (!isRetry) {
                     setTimeout(() => fetchRates(true), 30 * 1000);
@@ -57,66 +60,86 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
         };
 
         fetchRates();
-        
+
         // Smart refresh based on NBP publish schedule
         const setupSmartRefresh = () => {
             const now = new Date();
-            const warsawTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Warsaw"}));
+            const warsawTime = new Date(
+                now.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
+            );
             const day = warsawTime.getDay(); // 0 = Sunday, 6 = Saturday
             const hours = warsawTime.getHours();
             const minutes = warsawTime.getMinutes();
             const currentMinutes = hours * 60 + minutes;
-            
+
             // Weekend (Saturday/Sunday): check once every 4 hours
             if (day === 0 || day === 6) {
-                const nextRefreshTime = new Date(warsawTime.getTime() + 4 * 60 * 60 * 1000);
+                const nextRefreshTime = new Date(
+                    warsawTime.getTime() + 4 * 60 * 60 * 1000
+                );
                 setNextRefresh(nextRefreshTime);
                 setRefreshReason('Weekend - NBP nie publikuje w weekendy');
                 return setTimeout(fetchRates, 4 * 60 * 60 * 1000); // 4 hours
             }
-            
+
             // Weekday logic based on NBP publish schedule
             const publish11_30 = 11 * 60 + 30; // 11:30 AM
             const publish12_30 = 12 * 60 + 30; // 12:30 PM
-            
+
             if (currentMinutes < publish11_30) {
-                // Before publish window: refresh at 11:30 
+                // Before publish window: refresh at 11:30
                 const minutesUntil11_30 = publish11_30 - currentMinutes;
-                const nextRefreshTime = new Date(warsawTime.getTime() + minutesUntil11_30 * 60 * 1000);
+                const nextRefreshTime = new Date(
+                    warsawTime.getTime() + minutesUntil11_30 * 60 * 1000
+                );
                 setNextRefresh(nextRefreshTime);
-                setRefreshReason('Przed publikacją - NBP publikuje około 11:30-12:30');
-            
-                return setTimeout(() => {
-                    fetchRates();
-                    setupSmartRefresh(); // Re-setup after fetch
-                }, minutesUntil11_30 * 60 * 1000);
+                setRefreshReason(
+                    'Przed publikacją - NBP publikuje około 11:30-12:30'
+                );
+
+                return setTimeout(
+                    () => {
+                        fetchRates();
+                        setupSmartRefresh(); // Re-setup after fetch
+                    },
+                    minutesUntil11_30 * 60 * 1000
+                );
             } else if (currentMinutes < publish12_30) {
                 // During publish window: check every 5 minutes
-                const nextRefreshTime = new Date(warsawTime.getTime() + 5 * 60 * 1000);
+                const nextRefreshTime = new Date(
+                    warsawTime.getTime() + 5 * 60 * 1000
+                );
                 setNextRefresh(nextRefreshTime);
-                setRefreshReason('Okno publikacji - sprawdzanie nowych kursów NBP');
-                return setTimeout(() => {
-                    fetchRates();
-                    setupSmartRefresh(); // Re-setup after fetch
-                }, 5 * 60 * 1000);
+                setRefreshReason(
+                    'Okno publikacji - sprawdzanie nowych kursów NBP'
+                );
+                return setTimeout(
+                    () => {
+                        fetchRates();
+                        setupSmartRefresh(); // Re-setup after fetch
+                    },
+                    5 * 60 * 1000
+                );
             } else {
                 // After publish window: wait until next business day 11:30
                 const nextBusinessDay = getNextBusinessDay(warsawTime);
                 const next11_30 = new Date(nextBusinessDay);
                 next11_30.setHours(11, 30, 0, 0);
-                
+
                 const msUntilNext = next11_30.getTime() - warsawTime.getTime();
                 setNextRefresh(next11_30);
-                setRefreshReason('Po publikacji - oczekiwanie na następny dzień roboczy');                
+                setRefreshReason(
+                    'Po publikacji - oczekiwanie na następny dzień roboczy'
+                );
                 return setTimeout(() => {
                     fetchRates();
                     setupSmartRefresh(); // Re-setup after fetch
                 }, msUntilNext);
             }
         };
-        
+
         const timeoutId = setupSmartRefresh();
-        
+
         return () => {
             if (timeoutId) {
                 clearTimeout(timeoutId);
@@ -140,26 +163,29 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     const getNextBusinessDay = (date) => {
         const nextDay = new Date(date);
         nextDay.setDate(nextDay.getDate() + 1);
-        
+
         // Skip weekends
         while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
             nextDay.setDate(nextDay.getDate() + 1);
         }
-        
+
         return nextDay;
     };
 
     // Toggle favorite status of a currency
     const toggleFavorite = (currencyCode) => {
         const newFavorites = favorites.includes(currencyCode)
-            ? favorites.filter(fav => fav !== currencyCode)
+            ? favorites.filter((fav) => fav !== currencyCode)
             : [...favorites, currencyCode];
-        
+
         setFavorites(newFavorites);
-        
+
         // Save to localStorage
         try {
-            localStorage.setItem('currencyFavorites', JSON.stringify(newFavorites));
+            localStorage.setItem(
+                'currencyFavorites',
+                JSON.stringify(newFavorites)
+            );
         } catch (error) {
             console.error('Error saving favorites to localStorage:', error);
         }
@@ -176,12 +202,12 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     const getCurrencyData = getExtendedCurrencyData;
 
     // Filter currencies based on search term
-    const filteredCurrencies = currencies.filter(currency => {
+    const filteredCurrencies = currencies.filter((currency) => {
         if (!searchTerm.trim()) return true;
-        
+
         const searchLower = searchTerm.toLowerCase();
         const data = getCurrencyData(currency);
-        
+
         return (
             currency.toLowerCase().includes(searchLower) ||
             data.name.toLowerCase().includes(searchLower) ||
@@ -190,15 +216,19 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     });
 
     // Separate favorites and non-favorites
-    const favoriteCurrencies = filteredCurrencies.filter(currency => isFavorite(currency));
-    const regularCurrencies = filteredCurrencies.filter(currency => !isFavorite(currency));
+    const favoriteCurrencies = filteredCurrencies.filter((currency) =>
+        isFavorite(currency)
+    );
+    const regularCurrencies = filteredCurrencies.filter(
+        (currency) => !isFavorite(currency)
+    );
 
     const formatTime = (date) => {
         if (!date) return 'Nigdy';
-        return date.toLocaleTimeString('en-PL', { 
-            hour: '2-digit', 
+        return date.toLocaleTimeString('en-PL', {
+            hour: '2-digit',
             minute: '2-digit',
-            hour12: false 
+            hour12: false,
         });
     };
 
@@ -206,13 +236,13 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
         if (!date) return '';
         const now = new Date();
         const diff = date.getTime() - now.getTime();
-        
+
         if (diff < 0) return 'przeterminowane';
-        
+
         const minutes = Math.floor(diff / (1000 * 60));
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
-        
+
         if (days > 0) return `za ${days}d ${hours % 24}h`;
         if (hours > 0) return `za ${hours}h ${minutes % 60}m`;
         if (minutes > 0) return `za ${minutes}m`;
@@ -222,25 +252,29 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     return (
         <div className="sidebar-rates">
             <h3>💵 Kursy walut</h3>
-            
+
             {/* Refresh Status */}
             <div className="refresh-status">
                 <div className="status-row">
                     <span className="status-label">Ostatnia aktualizacja:</span>
-                    <span className="status-value">{formatTime(lastRefresh)}</span>
+                    <span className="status-value">
+                        {formatTime(lastRefresh)}
+                    </span>
                 </div>
                 <div className="status-row">
                     <span className="status-label">Następna:</span>
                     <span className="status-value">
-                        {formatTime(nextRefresh)} 
-                        <span className="status-relative">({formatRelativeTime(nextRefresh)})</span>
+                        {formatTime(nextRefresh)}
+                        <span className="status-relative">
+                            ({formatRelativeTime(nextRefresh)})
+                        </span>
                     </span>
                 </div>
                 {refreshReason && (
                     <div className="status-reason">{refreshReason}</div>
                 )}
             </div>
-            
+
             <div className="search-container">
                 <input
                     type="text"
@@ -250,7 +284,7 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            
+
             <div className="currency-list">
                 {filteredCurrencies.length > 0 ? (
                     <>
@@ -258,15 +292,21 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                         {favoriteCurrencies.length > 0 && (
                             <div className="favorites-section">
                                 <div className="section-header">
-                                    <span className="section-title">★ Ulubione</span>
-                                    <span className="section-count">({favoriteCurrencies.length})</span>
+                                    <span className="section-title">
+                                        ★ Ulubione
+                                    </span>
+                                    <span className="section-count">
+                                        ({favoriteCurrencies.length})
+                                    </span>
                                 </div>
-                                {favoriteCurrencies.map(currency => (
+                                {favoriteCurrencies.map((currency) => (
                                     <CurrencyItem
                                         key={`fav-${currency}`}
                                         currency={currency}
                                         rate={rates[currency]}
-                                        isSelected={selectedCurrency === currency}
+                                        isSelected={
+                                            selectedCurrency === currency
+                                        }
                                         isLoading={loading}
                                         hasError={error}
                                         isFavorite={true}
@@ -284,16 +324,22 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                             <div className="regular-section">
                                 {favoriteCurrencies.length > 0 && (
                                     <div className="section-header">
-                                        <span className="section-title">Wszystkie waluty</span>
-                                        <span className="section-count">({regularCurrencies.length})</span>
+                                        <span className="section-title">
+                                            Wszystkie waluty
+                                        </span>
+                                        <span className="section-count">
+                                            ({regularCurrencies.length})
+                                        </span>
                                     </div>
                                 )}
-                                {regularCurrencies.map(currency => (
+                                {regularCurrencies.map((currency) => (
                                     <CurrencyItem
                                         key={`reg-${currency}`}
                                         currency={currency}
                                         rate={rates[currency]}
-                                        isSelected={selectedCurrency === currency}
+                                        isSelected={
+                                            selectedCurrency === currency
+                                        }
                                         isLoading={loading}
                                         hasError={error}
                                         isFavorite={false}
@@ -309,7 +355,9 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                 ) : (
                     <div className="no-results">
                         <span>Nie znaleziono walut</span>
-                        <small>Spróbuj wyszukać po kodzie, nazwie lub kraju</small>
+                        <small>
+                            Spróbuj wyszukać po kodzie, nazwie lub kraju
+                        </small>
                     </div>
                 )}
             </div>
@@ -317,17 +365,17 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     );
 };
 
-const CurrencyItem = ({ 
-    currency, 
-    rate, 
-    isSelected, 
-    isLoading, 
-    hasError, 
-    isFavorite, 
-    onSelect, 
-    onToggleFavorite, 
+const CurrencyItem = ({
+    currency,
+    rate,
+    isSelected,
+    isLoading,
+    hasError,
+    isFavorite,
+    onSelect,
+    onToggleFavorite,
     formatRate,
-    getCurrencyData
+    getCurrencyData,
 }) => {
     const handleFavoriteClick = (e) => {
         e.stopPropagation(); // Prevent triggering the currency selection
@@ -344,30 +392,38 @@ const CurrencyItem = ({
         >
             <div className="currency-header">
                 <div className="currency-flag">
-                    <span className="flag-emoji" role="img" aria-label={`${currency} flag`}>
+                    <span
+                        className="flag-emoji"
+                        role="img"
+                        aria-label={`${currency} flag`}
+                    >
                         {currencyData.flag}
                     </span>
                 </div>
                 <div className="currency-info">
                     <span className="currency-code">{currency}</span>
-                    <span className="currency-name">
-                        {currencyData.name}
-                    </span>
+                    <span className="currency-name">{currencyData.name}</span>
                 </div>
                 <button
                     className="favorite-button"
                     onClick={handleFavoriteClick}
-                    title={isFavorite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+                    title={
+                        isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'
+                    }
                     disabled={isLoading}
                 >
                     {isFavorite ? (
-                        <span className="favorite-icon favorite-icon--filled">★</span>
+                        <span className="favorite-icon favorite-icon--filled">
+                            ★
+                        </span>
                     ) : (
-                        <span className="favorite-icon favorite-icon--empty">☆</span>
+                        <span className="favorite-icon favorite-icon--empty">
+                            ☆
+                        </span>
                     )}
                 </button>
             </div>
-            
+
             {isLoading ? (
                 <div className="rates-loading">Ładowanie...</div>
             ) : hasError ? (
@@ -376,11 +432,13 @@ const CurrencyItem = ({
                 <div className="currency-rates">
                     <div className="rate-row">
                         <span className="rate-label">Średnia</span>
-                        <span className="rate-value rate-mid">{formatRate(rate.mid)}</span>
+                        <span className="rate-value rate-mid">
+                            {formatRate(rate.mid)}
+                        </span>
                     </div>
                     <div className="rate-row">
                         <span className="rate-label">Kupno</span>
-                        <span 
+                        <span
                             className={`rate-value rate-buy ${!rate.buy ? 'rate-unavailable' : ''}`}
                         >
                             {rate.buy ? formatRate(rate.buy) : 'N/D'}
@@ -388,7 +446,7 @@ const CurrencyItem = ({
                     </div>
                     <div className="rate-row">
                         <span className="rate-label">Sprzedaż</span>
-                        <span 
+                        <span
                             className={`rate-value rate-sell ${!rate.sell ? 'rate-unavailable' : ''}`}
                         >
                             {rate.sell ? formatRate(rate.sell) : 'N/D'}
@@ -401,6 +459,5 @@ const CurrencyItem = ({
         </button>
     );
 };
-
 
 export default SidebarRates;

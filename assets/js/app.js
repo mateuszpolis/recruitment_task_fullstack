@@ -22,21 +22,21 @@ const App = () => {
     return (
         <div className="app-container">
             {/* <Header /> */}
-            
+
             <main className="app-main">
                 <div className="panel panel-left">
-                    <SidebarRates 
+                    <SidebarRates
                         selectedCurrency={selectedCurrency}
                         onCurrencySelect={setSelectedCurrency}
                     />
                 </div>
-                
+
                 <div className="panel panel-middle">
                     <RateChart selectedCurrency={selectedCurrency} />
                 </div>
-                
+
                 <div className="panel panel-right">
-                    <Calculator 
+                    <Calculator
                         selectedCurrency={selectedCurrency}
                         onCurrencyChange={setSelectedCurrency}
                     />
@@ -46,5 +46,9 @@ const App = () => {
     );
 };
 
-ReactDOM.render(<Router><App /></Router>, document.getElementById('root'));
-
+ReactDOM.render(
+    <Router>
+        <App />
+    </Router>,
+    document.getElementById('root')
+);
