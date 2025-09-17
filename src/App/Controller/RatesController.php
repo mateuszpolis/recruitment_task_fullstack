@@ -39,7 +39,7 @@ final class RatesController extends AbstractController
             $tableData = $this->nbpClient->getCurrentTableA();
             $available = array_keys($tableData['rates'] ?? []);
             $missing = array_values(array_diff($requestedCodes, $available));
-            
+
             if ($missing) {
                 return $this->json(
                     ErrorResponse::from(
@@ -285,7 +285,9 @@ final class RatesController extends AbstractController
         $codes = array_filter($codes, fn (string $code) => $code !== '');
         $codes = array_unique($codes);
 
-        if (count($codes) > 20) { throw new \InvalidArgumentException('Too many currency codes (max 20)'); }
+        if (count($codes) > 20) {
+            throw new \InvalidArgumentException('Too many currency codes (max 20)');
+        }
 
         if (empty($codes)) {
             throw new \InvalidArgumentException('At least one valid currency code must be provided');

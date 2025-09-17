@@ -489,7 +489,7 @@ final class NbpClient implements NbpClientInterface
         if ($age <= $maxAge) {
             return $lastGood['data'];
         }
-        
+
         // LastGood data is too old, throw the original exception
         if ($originalException instanceof NbpClientException) {
             throw $originalException;
