@@ -1198,25 +1198,54 @@
     }
   }
   
+  @media (max-width: 900px) {
+    .app-main {
+      grid-template-columns: 200px 1fr 250px;
+      gap: var(--space-2);
+    }
+    
+    .panel {
+      padding: var(--space-3);
+    }
+  }
+  
   @media (max-width: 768px) {
     .app-container {
-      height: 100vh;
-      height: 100dvh; /* Use dynamic viewport height on mobile */
+      height: auto;
+      min-height: 100vh;
+      overflow: visible;
     }
     
     .app-main {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow: visible;
+      min-height: auto;
     }
     
     .panel {
       max-height: none;
       overflow: visible;
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--gray-200);
     }
     
-    .panel-left, .panel-right {
-      border: none;
+    .panel:last-child {
+      border-bottom: none;
+    }
+    
+    /* Mobile order: sidebar → calculator → chart */
+    .panel-left {
+      order: 1;
+    }
+    
+    .panel-right {
+      order: 2;
+    }
+    
+    .panel-middle {
+      order: 3;
     }
     
     .sidebar-rates, .rate-chart, .calculator {
@@ -1224,8 +1253,214 @@
       overflow: visible;
     }
     
-    .currency-list, .chart-data, .calculator-content {
+    .currency-list, .chart-data {
       overflow: visible;
       max-height: none;
+    }
+    
+    /* Sidebar specific mobile adjustments */
+    .currency-list {
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    
+    .refresh-status {
+      margin-bottom: var(--space-3);
+    }
+    
+    /* Chart specific mobile adjustments */
+    .chart-container {
+      margin-bottom: var(--space-3);
+      overflow-x: auto;
+    }
+    
+    .chart-svg {
+      max-width: 100%;
+      height: auto;
+      min-width: 320px; /* Ensure chart doesn't get too small */
+    }
+    
+    .date-navigation {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+    
+    .date-picker-container {
+      margin: 0;
+    }
+    
+    .chart-legend {
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      justify-content: center;
+    }
+    
+    /* Table responsive adjustments */
+    .chart-table {
+      margin-top: var(--space-4);
+      overflow-x: auto;
+    }
+    
+    .table-body-container {
+      max-height: 50vh;
+      overflow-x: auto;
+    }
+    
+    .table {
+      min-width: 320px; /* Ensure table doesn't get too compressed */
+    }
+    
+    .table th,
+    .table td {
+      padding: var(--space-2);
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    
+    /* Calculator specific mobile adjustments */
+    .exchange-container {
+      gap: var(--space-4);
+    }
+    
+    .currency-card {
+      padding: var(--space-3);
+      min-height: 100px;
+    }
+    
+    .currency-header {
+      gap: var(--space-2);
+    }
+    
+    .currency-flag-large {
+      font-size: 1.5rem;
+      width: 32px;
+      height: 32px;
+    }
+    
+    .currency-code-large {
+      font-size: 1rem;
+    }
+    
+    .currency-name-small {
+      font-size: 0.75rem;
+      min-height: 2em;
+    }
+    
+    .amount-input,
+    .amount-display {
+      font-size: 1.25rem;
+      width: 100px;
+      min-width: 100px;
+    }
+    
+    .currency-symbol {
+      font-size: 1rem;
+    }
+    
+    .rate-info-card {
+      padding: var(--space-3);
+    }
+    
+    .rate-line {
+      font-size: 0.9rem;
+    }
+    
+    /* Search input adjustments */
+    .search-input {
+      padding: var(--space-2) var(--space-3);
+      font-size: 0.9rem;
+    }
+    
+    /* Currency item adjustments */
+    .currency-item {
+      padding: var(--space-3);
+      min-height: 44px; /* Ensure touch target is at least 44px */
+    }
+    
+    .currency-header {
+      margin-bottom: var(--space-1);
+    }
+    
+    .currency-code {
+      font-size: 0.85rem;
+    }
+    
+    .currency-name {
+      font-size: 0.75rem;
+    }
+    
+    .currency-rates {
+      font-size: 0.75rem;
+    }
+    
+    /* Ensure buttons are touch-friendly */
+    .button {
+      min-height: 44px;
+    }
+    
+    .swap-button {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .panel {
+      padding: var(--space-3);
+    }
+    
+    .exchange-title {
+      font-size: 1.1rem;
+    }
+    
+    .currency-card {
+      padding: var(--space-2);
+    }
+    
+    .amount-input,
+    .amount-display {
+      font-size: 1.1rem;
+      width: 80px;
+      min-width: 80px;
+    }
+    
+    .currency-flag-large {
+      font-size: 1.25rem;
+      width: 28px;
+      height: 28px;
+    }
+    
+    .currency-code-large {
+      font-size: 0.9rem;
+    }
+    
+    .currency-name-small {
+      font-size: 0.7rem;
+    }
+    
+    .table th,
+    .table td {
+      padding: var(--space-1);
+      font-size: 0.8rem;
+    }
+    
+    .date-navigation {
+      gap: var(--space-1);
+    }
+    
+    .date-nav-button {
+      width: 44px;
+      height: 44px;
+    }
+    
+    .date-display-button {
+      padding: 0 var(--space-2);
+      height: 44px;
+      font-size: 0.85rem;
+    }
+    
+    .search-input {
+      min-height: 44px;
     }
   }
