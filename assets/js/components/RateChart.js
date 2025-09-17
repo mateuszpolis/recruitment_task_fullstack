@@ -9,12 +9,14 @@ const RateChart = ({ selectedCurrency }) => {
     const [hoveredPoint, setHoveredPoint] = useState(null);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [chartRef, setChartRef] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
     useEffect(() => {
         if (selectedCurrency) {
             fetchHistory();
         }
-    }, [selectedCurrency]);
+    }, [selectedCurrency, selectedDate]);
 
     const fetchHistory = async () => {
         if (!selectedCurrency) return;
@@ -23,8 +25,7 @@ const RateChart = ({ selectedCurrency }) => {
         setError(null);
 
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const data = await getHistory(selectedCurrency, today, 14);
+            const data = await getHistory(selectedCurrency, selectedDate, 14);
             setHistoryData(data.history || []);
         } catch (err) {
             setError(err.message || 'Failed to load chart data');
@@ -32,6 +33,35 @@ const RateChart = ({ selectedCurrency }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Date navigation functions
+    const handlePreviousDay = () => {
+        const currentDate = new Date(selectedDate);
+        currentDate.setDate(currentDate.getDate() - 1);
+        setSelectedDate(currentDate.toISOString().split('T')[0]);
+    };
+
+    const handleNextDay = () => {
+        const currentDate = new Date(selectedDate);
+        const today = new Date();
+        
+        // Don't allow going beyond today
+        if (currentDate.toDateString() !== today.toDateString()) {
+            currentDate.setDate(currentDate.getDate() + 1);
+            setSelectedDate(currentDate.toISOString().split('T')[0]);
+        }
+    };
+
+    const handleDateChange = (event) => {
+        setSelectedDate(event.target.value);
+        setShowDatePicker(false);
+    };
+
+    const canGoNext = () => {
+        const currentDate = new Date(selectedDate);
+        const today = new Date();
+        return currentDate.toDateString() !== today.toDateString();
     };
 
     // Helper function to get mouse position relative to chart
@@ -173,12 +203,64 @@ const RateChart = ({ selectedCurrency }) => {
     return (
         <div className="rate-chart">
             <div className="chart-header">
-                <h3>{selectedCurrency} History (14 days)</h3>
-                <div className="chart-stats">
-                    <span>Max: {maxRate.toFixed(4)} PLN</span>
-                    <span>Min: {minRate.toFixed(4)} PLN</span>
+                <h3>{selectedCurrency} History (14 days)</h3>                
+                <div className="date-navigation">
+                <button 
+                    className="date-nav-button" 
+                    onClick={handlePreviousDay}
+                    title="Previous day"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="15,18 9,12 15,6"></polyline>
+                    </svg>
+                </button>
+                
+                <div className="date-picker-container">
+                    <button 
+                        className="date-display-button"
+                        onClick={() => setShowDatePicker(!showDatePicker)}
+                        title="Select date"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <span>{new Date(selectedDate).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric' 
+                        })}</span>
+                    </button>
+                    
+                    {showDatePicker && (
+                        <div className="date-picker-dropdown">
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                max={new Date().toISOString().split('T')[0]}
+                                onChange={handleDateChange}
+                                className="date-input"
+                                autoFocus
+                                onBlur={() => setShowDatePicker(false)}
+                            />
+                        </div>
+                    )}
                 </div>
+                
+                <button 
+                    className="date-nav-button" 
+                    onClick={handleNextDay}
+                    disabled={!canGoNext()}
+                    title="Next day"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                </button>
             </div>
+            </div>            
             
             <div 
                 className="chart-container"
@@ -193,14 +275,7 @@ const RateChart = ({ selectedCurrency }) => {
                 <svg 
                     className="chart-svg" 
                     viewBox={`0 0 ${chartWidth + marginLeft + marginRight} ${chartHeight + marginTop + marginBottom}`}
-                >
-                    {/* Background grid */}
-                    <defs>
-                        <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
-                            <path d="M 40 0 L 0 0 0 20" fill="none" stroke="var(--gray-200)" strokeWidth="0.5"/>
-                        </pattern>
-                    </defs>
-                    <rect x={marginLeft} y={marginTop} width={chartWidth} height={chartHeight} fill="url(#grid)" />
+                >                    
                     
                     {/* Y-axis */}
                     <line 
@@ -311,7 +386,6 @@ const RateChart = ({ selectedCurrency }) => {
                             fill="none"
                             stroke="var(--success-500)"
                             strokeWidth="3"
-                            strokeDasharray="4,4"
                             points={historyData.filter(item => item.buy).map((item, filteredIndex) => {
                                 const originalIndex = historyData.findIndex(h => h.date === item.date);
                                 const x = getX(originalIndex);
@@ -327,7 +401,6 @@ const RateChart = ({ selectedCurrency }) => {
                             fill="none"
                             stroke="var(--error-500)"
                             strokeWidth="3"
-                            strokeDasharray="6,3"
                             points={historyData.filter(item => item.sell).map((item, filteredIndex) => {
                                 const originalIndex = historyData.findIndex(h => h.date === item.date);
                                 const x = getX(originalIndex);
@@ -352,8 +425,6 @@ const RateChart = ({ selectedCurrency }) => {
                                     cy={yMid}
                                     r={hoveredPoint === `mid-${index}` ? 6 : 4}
                                     fill="var(--gray-500)"
-                                    stroke="white"
-                                    strokeWidth="2"
                                     className={`chart-point ${hoveredPoint === `mid-${index}` ? 'chart-point--hovered' : ''}`}
                                 />
                                 
@@ -364,8 +435,6 @@ const RateChart = ({ selectedCurrency }) => {
                                         cy={yBuy}
                                         r={hoveredPoint === `buy-${index}` ? 6 : 4}
                                         fill="var(--success-500)"
-                                        stroke="white"
-                                        strokeWidth="2"
                                         className={`chart-point ${hoveredPoint === `buy-${index}` ? 'chart-point--hovered' : ''}`}
                                     />
                                 )}
@@ -377,8 +446,6 @@ const RateChart = ({ selectedCurrency }) => {
                                         cy={ySell}
                                         r={hoveredPoint === `sell-${index}` ? 6 : 4}
                                         fill="var(--error-500)"
-                                        stroke="white"
-                                        strokeWidth="2"
                                         className={`chart-point ${hoveredPoint === `sell-${index}` ? 'chart-point--hovered' : ''}`}
                                     />
                                 )}
