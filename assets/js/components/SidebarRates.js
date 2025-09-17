@@ -7,11 +7,14 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [lastRefresh, setLastRefresh] = useState(null);
+    const [nextRefresh, setNextRefresh] = useState(null);
+    const [refreshReason, setRefreshReason] = useState('');
 
     useEffect(() => {
-        const fetchRates = async () => {
+        const fetchRates = async (isRetry = false) => {
             try {
-                setLoading(true);
+                if (!isRetry) setLoading(true);
                 setError(null);
                 const response = await getCurrentRates(currencies);
                 
@@ -21,9 +24,19 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                     ratesMap[rate.code] = rate;
                 });
                 setRates(ratesMap);
+                setLastRefresh(new Date());
+                
+                // Log successful fetch for debugging (can be removed in production)
+                console.log('Rates fetched successfully at', new Date().toLocaleString('en-US', {timeZone: 'Europe/Warsaw'}));
             } catch (err) {
                 setError(err.message || 'Failed to fetch rates');
                 console.error('Error fetching rates:', err);
+                
+                // Retry once after 30 seconds if this wasn't already a retry
+                if (!isRetry) {
+                    console.log('Retrying in 30 seconds...');
+                    setTimeout(() => fetchRates(true), 30 * 1000);
+                }
             } finally {
                 setLoading(false);
             }
@@ -31,10 +44,100 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
 
         fetchRates();
         
-        // Refresh rates every 5 minutes
-        const interval = setInterval(fetchRates, 5 * 60 * 1000);
-        return () => clearInterval(interval);
+        // Smart refresh based on NBP publish schedule
+        const setupSmartRefresh = () => {
+            const now = new Date();
+            const warsawTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Warsaw"}));
+            const day = warsawTime.getDay(); // 0 = Sunday, 6 = Saturday
+            const hours = warsawTime.getHours();
+            const minutes = warsawTime.getMinutes();
+            const currentMinutes = hours * 60 + minutes;
+            
+            // Weekend (Saturday/Sunday): check once every 4 hours
+            if (day === 0 || day === 6) {
+                const nextRefreshTime = new Date(warsawTime.getTime() + 4 * 60 * 60 * 1000);
+                setNextRefresh(nextRefreshTime);
+                setRefreshReason('Weekend - NBP doesn\'t publish on weekends');
+                console.log('Weekend detected - next refresh in 4 hours');
+                return setTimeout(fetchRates, 4 * 60 * 60 * 1000); // 4 hours
+            }
+            
+            // Weekday logic based on NBP publish schedule
+            const publish11_30 = 11 * 60 + 30; // 11:30 AM
+            const publish12_30 = 12 * 60 + 30; // 12:30 PM
+            
+            if (currentMinutes < publish11_30) {
+                // Before publish window: refresh at 11:30 
+                const minutesUntil11_30 = publish11_30 - currentMinutes;
+                const nextRefreshTime = new Date(warsawTime.getTime() + minutesUntil11_30 * 60 * 1000);
+                setNextRefresh(nextRefreshTime);
+                setRefreshReason('Before publish window - NBP publishes around 11:30-12:30');
+                console.log(`Pre-publish: waiting ${minutesUntil11_30} minutes until 11:30 Warsaw time`);
+                return setTimeout(() => {
+                    fetchRates();
+                    setupSmartRefresh(); // Re-setup after fetch
+                }, minutesUntil11_30 * 60 * 1000);
+            } else if (currentMinutes < publish12_30) {
+                // During publish window: check every 5 minutes
+                const nextRefreshTime = new Date(warsawTime.getTime() + 5 * 60 * 1000);
+                setNextRefresh(nextRefreshTime);
+                setRefreshReason('Publish window - checking for new NBP rates');
+                console.log('In publish window (11:30-12:30) - next refresh in 5 minutes');
+                return setTimeout(() => {
+                    fetchRates();
+                    setupSmartRefresh(); // Re-setup after fetch
+                }, 5 * 60 * 1000);
+            } else {
+                // After publish window: wait until next business day 11:30
+                const nextBusinessDay = getNextBusinessDay(warsawTime);
+                const next11_30 = new Date(nextBusinessDay);
+                next11_30.setHours(11, 30, 0, 0);
+                
+                const msUntilNext = next11_30.getTime() - warsawTime.getTime();
+                const hoursUntilNext = Math.round(msUntilNext / (1000 * 60 * 60));
+                setNextRefresh(next11_30);
+                setRefreshReason('After publish window - waiting for next business day');
+                console.log(`Post-publish: waiting ~${hoursUntilNext} hours until next business day 11:30`);
+                return setTimeout(() => {
+                    fetchRates();
+                    setupSmartRefresh(); // Re-setup after fetch
+                }, msUntilNext);
+            }
+        };
+        
+        const timeoutId = setupSmartRefresh();
+        
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
     }, []);
+
+    // Update relative time display every minute
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // Force re-render to update relative time display
+            if (nextRefresh) {
+                setNextRefresh(new Date(nextRefresh.getTime()));
+            }
+        }, 60000); // Update every minute
+
+        return () => clearInterval(interval);
+    }, [nextRefresh]);
+
+    // Helper function to get next business day (skips weekends)
+    const getNextBusinessDay = (date) => {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        // Skip weekends
+        while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
+            nextDay.setDate(nextDay.getDate() + 1);
+        }
+        
+        return nextDay;
+    };
 
     const formatRate = (rate) => {
         if (!rate) return '—';
@@ -67,9 +170,53 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
         );
     });
 
+    const formatTime = (date) => {
+        if (!date) return 'Never';
+        return date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        });
+    };
+
+    const formatRelativeTime = (date) => {
+        if (!date) return '';
+        const now = new Date();
+        const diff = date.getTime() - now.getTime();
+        
+        if (diff < 0) return 'overdue';
+        
+        const minutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        
+        if (days > 0) return `in ${days}d ${hours % 24}h`;
+        if (hours > 0) return `in ${hours}h ${minutes % 60}m`;
+        if (minutes > 0) return `in ${minutes}m`;
+        return 'soon';
+    };
+
     return (
         <div className="sidebar-rates">
             <h3>Exchange Rates</h3>
+            
+            {/* Refresh Status */}
+            <div className="refresh-status">
+                <div className="status-row">
+                    <span className="status-label">Last updated:</span>
+                    <span className="status-value">{formatTime(lastRefresh)}</span>
+                </div>
+                <div className="status-row">
+                    <span className="status-label">Next check:</span>
+                    <span className="status-value">
+                        {formatTime(nextRefresh)} 
+                        <span className="status-relative">({formatRelativeTime(nextRefresh)})</span>
+                    </span>
+                </div>
+                {refreshReason && (
+                    <div className="status-reason">{refreshReason}</div>
+                )}
+            </div>
             
             <div className="search-container">
                 <input

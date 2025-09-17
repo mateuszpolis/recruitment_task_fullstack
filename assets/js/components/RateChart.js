@@ -182,8 +182,13 @@ const RateChart = ({ selectedCurrency }) => {
         if (item.sell) allRates.push(parseFloat(item.sell));
     });
     
-    const maxRate = Math.max(...allRates);
-    const minRate = Math.min(...allRates);
+    const dataMaxRate = Math.max(...allRates);
+    const dataMinRate = Math.min(...allRates);
+    
+    // Add 10% padding below minimum and 5% above maximum for better visualization
+    const padding = (dataMaxRate - dataMinRate) * 0.1;
+    const minRate = Math.max(0, dataMinRate - padding); // Don't go below 0
+    const maxRate = dataMaxRate + (padding * 0.5); // Smaller padding on top
     const range = maxRate - minRate;
     
     // Chart dimensions with margins for axes - using larger dimensions
@@ -194,8 +199,27 @@ const RateChart = ({ selectedCurrency }) => {
     const marginTop = 20;
     const marginRight = 20;
 
+    // Create date-based positioning to show proper gaps for missing days
+    const getDateBasedX = (date) => {
+        if (historyData.length === 0) return marginLeft;
+        
+        const firstDate = new Date(historyData[0].date);
+        const lastDate = new Date(historyData[historyData.length - 1].date);
+        const totalDays = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (totalDays === 0) return marginLeft;
+        
+        const currentDate = new Date(date);
+        const daysSinceFirst = Math.ceil((currentDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        return marginLeft + (daysSinceFirst / totalDays) * chartWidth;
+    };
+
     // Helper function to calculate positions
-    const getX = (index) => marginLeft + (index / Math.max(historyData.length - 1, 1)) * chartWidth;
+    const getX = (index) => {
+        return getDateBasedX(historyData[index].date);
+    };
+    
     const getY = (value) => range > 0 
         ? marginTop + chartHeight - ((parseFloat(value) - minRate) / range) * chartHeight 
         : marginTop + chartHeight / 2;
@@ -324,23 +348,61 @@ const RateChart = ({ selectedCurrency }) => {
                         );
                     })}
                     
-                    {/* X-axis labels (show every 3rd date to avoid crowding) */}
-                    {historyData.map((item, index) => {
-                        if (index % 3 === 0 || index === historyData.length - 1) {
-                            const x = getX(index);
-                            const shortDate = new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    {/* X-axis labels - show strategic dates based on range */}
+                    {(() => {
+                        if (historyData.length === 0) return null;
+                        
+                        const firstDate = new Date(historyData[0].date);
+                        const lastDate = new Date(historyData[historyData.length - 1].date);
+                        const totalDays = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+                        
+                        // Create labels for strategic positions
+                        const labels = [];
+                        
+                        // Always show first and last dates
+                        labels.push({
+                            date: historyData[0].date,
+                            x: getX(0),
+                            isData: true
+                        });
+                        
+                        if (historyData.length > 1) {
+                            labels.push({
+                                date: historyData[historyData.length - 1].date,
+                                x: getX(historyData.length - 1),
+                                isData: true
+                            });
+                        }
+                        
+                        // Add middle dates if there's a significant range
+                        if (totalDays > 7) {
+                            const midIndex = Math.floor(historyData.length / 2);
+                            if (midIndex > 0 && midIndex < historyData.length - 1) {
+                                labels.push({
+                                    date: historyData[midIndex].date,
+                                    x: getX(midIndex),
+                                    isData: true
+                                });
+                            }
+                        }
+                        
+                        // Sort by x position to avoid overlaps
+                        labels.sort((a, b) => a.x - b.x);
+                        
+                        return labels.map((label, index) => {
+                            const shortDate = new Date(label.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                             return (
-                                <g key={index}>
+                                <g key={`label-${index}`}>
                                     <line 
-                                        x1={x} 
+                                        x1={label.x} 
                                         y1={marginTop + chartHeight} 
-                                        x2={x} 
+                                        x2={label.x} 
                                         y2={marginTop + chartHeight + 5} 
                                         stroke="var(--gray-400)" 
                                         strokeWidth="1"
                                     />
                                     <text 
-                                        x={x} 
+                                        x={label.x} 
                                         y={marginTop + chartHeight + 18} 
                                         textAnchor="middle" 
                                         fontSize="10" 
@@ -350,9 +412,8 @@ const RateChart = ({ selectedCurrency }) => {
                                     </text>
                                 </g>
                             );
-                        }
-                        return null;
-                    })}
+                        });
+                    })()}
                     
                     {/* Y-axis title */}
                     <text 
