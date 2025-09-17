@@ -10,6 +10,23 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
     const [lastRefresh, setLastRefresh] = useState(null);
     const [nextRefresh, setNextRefresh] = useState(null);
     const [refreshReason, setRefreshReason] = useState('');
+    const [favorites, setFavorites] = useState([]);
+
+    // Load favorites from localStorage on component mount
+    useEffect(() => {
+        const savedFavorites = localStorage.getItem('currencyFavorites');
+        if (savedFavorites) {
+            try {
+                const parsedFavorites = JSON.parse(savedFavorites);
+                if (Array.isArray(parsedFavorites)) {
+                    setFavorites(parsedFavorites);
+                }
+            } catch (error) {
+                console.error('Error parsing favorites from localStorage:', error);
+                localStorage.removeItem('currencyFavorites');
+            }
+        }
+    }, []);
 
     useEffect(() => {
         const fetchRates = async (isRetry = false) => {
@@ -139,6 +156,24 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
         return nextDay;
     };
 
+    // Toggle favorite status of a currency
+    const toggleFavorite = (currencyCode) => {
+        const newFavorites = favorites.includes(currencyCode)
+            ? favorites.filter(fav => fav !== currencyCode)
+            : [...favorites, currencyCode];
+        
+        setFavorites(newFavorites);
+        
+        // Save to localStorage
+        try {
+            localStorage.setItem('currencyFavorites', JSON.stringify(newFavorites));
+        } catch (error) {
+            console.error('Error saving favorites to localStorage:', error);
+        }
+    };
+
+    const isFavorite = (currencyCode) => favorites.includes(currencyCode);
+
     const formatRate = (rate) => {
         if (!rate) return '—';
         return parseFloat(rate).toFixed(4);
@@ -169,6 +204,10 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
             data.country.toLowerCase().includes(searchLower)
         );
     });
+
+    // Separate favorites and non-favorites
+    const favoriteCurrencies = filteredCurrencies.filter(currency => isFavorite(currency));
+    const regularCurrencies = filteredCurrencies.filter(currency => !isFavorite(currency));
 
     const formatTime = (date) => {
         if (!date) return 'Never';
@@ -230,60 +269,57 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
             
             <div className="currency-list">
                 {filteredCurrencies.length > 0 ? (
-                    filteredCurrencies.map(currency => {
-                    const rate = rates[currency];
-                    return (
-                        <button
-                            key={currency}
-                            className={`currency-item ${selectedCurrency === currency ? 'active' : ''}`}
-                            onClick={() => onCurrencySelect(currency)}
-                            disabled={loading}
-                        >
-                            <div className="currency-header">
-                                <div className="currency-flag">
-                                    <CurrencyFlag code={currency} />
+                    <>
+                        {/* Favorites Section */}
+                        {favoriteCurrencies.length > 0 && (
+                            <div className="favorites-section">
+                                <div className="section-header">
+                                    <span className="section-title">★ Favorites</span>
+                                    <span className="section-count">({favoriteCurrencies.length})</span>
                                 </div>
-                                <div className="currency-info">
-                                    <span className="currency-code">{currency}</span>
-                                    <span className="currency-name">
-                                        {getCurrencyName(currency)}
-                                    </span>
-                                </div>
+                                {favoriteCurrencies.map(currency => (
+                                    <CurrencyItem
+                                        key={`fav-${currency}`}
+                                        currency={currency}
+                                        rate={rates[currency]}
+                                        isSelected={selectedCurrency === currency}
+                                        isLoading={loading}
+                                        hasError={error}
+                                        isFavorite={true}
+                                        onSelect={onCurrencySelect}
+                                        onToggleFavorite={toggleFavorite}
+                                        formatRate={formatRate}
+                                    />
+                                ))}
                             </div>
-                            
-                            {loading ? (
-                                <div className="rates-loading">Loading...</div>
-                            ) : error ? (
-                                <div className="rates-error">Error</div>
-                            ) : rate ? (
-                                <div className="currency-rates">
-                                    <div className="rate-row">
-                                        <span className="rate-label">Mid</span>
-                                        <span className="rate-value rate-mid">{formatRate(rate.mid)}</span>
+                        )}
+
+                        {/* Regular Currencies Section */}
+                        {regularCurrencies.length > 0 && (
+                            <div className="regular-section">
+                                {favoriteCurrencies.length > 0 && (
+                                    <div className="section-header">
+                                        <span className="section-title">All Currencies</span>
+                                        <span className="section-count">({regularCurrencies.length})</span>
                                     </div>
-                                    <div className="rate-row">
-                                        <span className="rate-label">Buy</span>
-                                        <span 
-                                            className={`rate-value rate-buy ${!rate.buy ? 'rate-unavailable' : ''}`}
-                                        >
-                                            {rate.buy ? formatRate(rate.buy) : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="rate-row">
-                                        <span className="rate-label">Sell</span>
-                                        <span 
-                                            className={`rate-value rate-sell ${!rate.sell ? 'rate-unavailable' : ''}`}
-                                        >
-                                            {rate.sell ? formatRate(rate.sell) : 'N/A'}
-                                        </span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="rates-error">No data</div>
-                            )}
-                        </button>
-                    );
-                    })
+                                )}
+                                {regularCurrencies.map(currency => (
+                                    <CurrencyItem
+                                        key={`reg-${currency}`}
+                                        currency={currency}
+                                        rate={rates[currency]}
+                                        isSelected={selectedCurrency === currency}
+                                        isLoading={loading}
+                                        hasError={error}
+                                        isFavorite={false}
+                                        onSelect={onCurrencySelect}
+                                        onToggleFavorite={toggleFavorite}
+                                        formatRate={formatRate}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="no-results">
                         <span>No currencies found</span>
@@ -292,6 +328,86 @@ const SidebarRates = ({ selectedCurrency, onCurrencySelect }) => {
                 )}
             </div>
         </div>
+    );
+};
+
+const CurrencyItem = ({ 
+    currency, 
+    rate, 
+    isSelected, 
+    isLoading, 
+    hasError, 
+    isFavorite, 
+    onSelect, 
+    onToggleFavorite, 
+    formatRate 
+}) => {
+    const handleFavoriteClick = (e) => {
+        e.stopPropagation(); // Prevent triggering the currency selection
+        onToggleFavorite(currency);
+    };
+
+    return (
+        <button
+            className={`currency-item ${isSelected ? 'active' : ''} ${isFavorite ? 'favorite' : ''}`}
+            onClick={() => onSelect(currency)}
+            disabled={isLoading}
+        >
+            <div className="currency-header">
+                <div className="currency-flag">
+                    <CurrencyFlag code={currency} />
+                </div>
+                <div className="currency-info">
+                    <span className="currency-code">{currency}</span>
+                    <span className="currency-name">
+                        {getCurrencyName(currency)}
+                    </span>
+                </div>
+                <button
+                    className="favorite-button"
+                    onClick={handleFavoriteClick}
+                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    disabled={isLoading}
+                >
+                    {isFavorite ? (
+                        <span className="favorite-icon favorite-icon--filled">★</span>
+                    ) : (
+                        <span className="favorite-icon favorite-icon--empty">☆</span>
+                    )}
+                </button>
+            </div>
+            
+            {isLoading ? (
+                <div className="rates-loading">Loading...</div>
+            ) : hasError ? (
+                <div className="rates-error">Error</div>
+            ) : rate ? (
+                <div className="currency-rates">
+                    <div className="rate-row">
+                        <span className="rate-label">Mid</span>
+                        <span className="rate-value rate-mid">{formatRate(rate.mid)}</span>
+                    </div>
+                    <div className="rate-row">
+                        <span className="rate-label">Buy</span>
+                        <span 
+                            className={`rate-value rate-buy ${!rate.buy ? 'rate-unavailable' : ''}`}
+                        >
+                            {rate.buy ? formatRate(rate.buy) : 'N/A'}
+                        </span>
+                    </div>
+                    <div className="rate-row">
+                        <span className="rate-label">Sell</span>
+                        <span 
+                            className={`rate-value rate-sell ${!rate.sell ? 'rate-unavailable' : ''}`}
+                        >
+                            {rate.sell ? formatRate(rate.sell) : 'N/A'}
+                        </span>
+                    </div>
+                </div>
+            ) : (
+                <div className="rates-error">No data</div>
+            )}
+        </button>
     );
 };
 
