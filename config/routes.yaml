@@ -26,10 +26,7 @@ rates_quote:
 
 index:
     path: /{wildcard}
-    defaults: {
-        _controller: App\Controller\DefaultController::index
-    }
+    defaults: { _controller: App\Controller\DefaultController::index }
     requirements:
         wildcard: .*
     # controller: App\Controller\DefaultController::index
-

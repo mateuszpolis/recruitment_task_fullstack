@@ -100,12 +100,20 @@ final class NbpClient implements NbpClientInterface
 
     /**
      * Returns current time in Europe/Warsaw timezone.
+     * 
+     * @return \DateTimeImmutable
      */
     private function nowWaw(): \DateTimeImmutable
     {
         return new \DateTimeImmutable('now', new \DateTimeZone('Europe/Warsaw'));
     }
 
+    /**
+     * Computes publish-aware TTL.
+     * 
+     * @param \DateTimeImmutable $nowWaw
+     * @return int
+     */
     private function computePublishAwareTtl(\DateTimeImmutable $nowWaw): int
     {
         [$baseTtl, $nextChangeAt] = $this->phaseBaseTtlAndNextChange($nowWaw);
@@ -127,6 +135,9 @@ final class NbpClient implements NbpClientInterface
     /**
      * Returns [baseTtl, nextChangeAt] where nextChangeAt is the next phase boundary,
      * or null when no cap is needed (post-publish/weekend).
+     * 
+     * @param \DateTimeImmutable $nowWaw
+     * @return array
      */
     private function phaseBaseTtlAndNextChange(\DateTimeImmutable $nowWaw): array
     {
@@ -159,7 +170,13 @@ final class NbpClient implements NbpClientInterface
         return [self::POST_PUBLISH_TTL, null];
     }
 
-    /** Apply jitter but never exceed the cap. */
+    /**
+     * Applies jitter but never exceeds the cap.
+     * 
+     * @param int $ttl
+     * @param int $cap
+     * @return int
+     */
     private function addJitterCapped(int $ttl, int $cap): int
     {
         // If we’re close to a boundary, prefer non-positive jitter so we don’t overshoot
@@ -183,6 +200,9 @@ final class NbpClient implements NbpClientInterface
     /**
      * Calculates TTL for historical data.
      * Recent data (≤7 days) uses publish-aware TTL, older data uses longer TTL.
+     * 
+     * @param string $endDate
+     * @return int
      */
     private function calculateHistoryTtl(string $endDate): int
     {
@@ -201,6 +221,10 @@ final class NbpClient implements NbpClientInterface
 
     /**
      * Updates lastGood cache with successful data for fallback purposes.
+     * 
+     * @param string $key
+     * @param array $payload
+     * @param int $ttl
      */
     private function updateLastGood(string $key, array $payload, int $ttl): void
     {
@@ -223,6 +247,8 @@ final class NbpClient implements NbpClientInterface
 
     /**
      * Fetches Table A data from NBP API with retry logic.
+     * 
+     * @return array
      */
     private function fetchTableAFromApi(): array
     {
@@ -326,6 +352,11 @@ final class NbpClient implements NbpClientInterface
 
     /**
      * Fetches historical data from NBP API with retry logic.
+     * 
+     * @param string $code
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
      */
     private function fetchHistoryFromApi(string $code, string $startDate, string $endDate): array
     {
@@ -421,6 +452,8 @@ final class NbpClient implements NbpClientInterface
 
     /**
      * Implements exponential backoff delay for retries.
+     * 
+     * @param int $retryNumber
      */
     private function backoffDelay(int $retryNumber): void
     {
@@ -432,6 +465,9 @@ final class NbpClient implements NbpClientInterface
      * Validates date range according to NBP API limitations.
      *
      * @throws NbpClientException When date format is invalid or range exceeds 93 days
+     * 
+     * @param string $startDate
+     * @param string $endDate
      */
     private function validateDateRange(string $startDate, string $endDate): void
     {
@@ -468,6 +504,12 @@ final class NbpClient implements NbpClientInterface
      * Returns lastGood data or throws the original exception if no data is available.
      *
      * @throws NbpClientException When no data is available or data is too old
+     * 
+     * @param string $key
+     * @param \Throwable $originalException
+     * @return array
+     * 
+     * @throws NbpClientException When no data is available or data is too old
      */
     private function lastGoodOrThrow(string $key, \Throwable $originalException): array
     {
@@ -500,6 +542,8 @@ final class NbpClient implements NbpClientInterface
 
 /**
  * Exception thrown by NbpClient when API operations fail.
+ * 
+ * @extends \Exception
  */
 class NbpClientException extends \Exception
 {

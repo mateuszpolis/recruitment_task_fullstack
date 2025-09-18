@@ -27,6 +27,13 @@ final class RatesController extends AbstractController
 
     /**
      * GET /api/rates/current?codes=EUR,USD,CZK,IDR,BRL
+     *
+     * @param Request $request
+     * @return JsonResponse
+     * 
+     * @throws \InvalidArgumentException When currency codes are invalid
+     * @throws \Throwable When an unexpected error occurs
+     * @throws NbpClientException When NBP API error occurs
      */
     public function getCurrentRates(Request $request): JsonResponse
     {
@@ -91,6 +98,14 @@ final class RatesController extends AbstractController
 
     /**
      * GET /api/rates/{code}/history?date=YYYY-MM-DD&days=14
+     *
+     * @param Request $request
+     * @param string $code
+     * @return JsonResponse
+     * 
+     * @throws \InvalidArgumentException When currency code is invalid
+     * @throws \Throwable When an unexpected error occurs
+     * @throws NbpClientException When NBP API error occurs
      */
     public function getHistoryRates(Request $request, string $code): JsonResponse
     {
@@ -175,6 +190,15 @@ final class RatesController extends AbstractController
     /**
      * POST /api/quote
      * Body: { "code": "EUR", "side": "buy"|"sell", "amount": "100.50" }
+     *
+     * @param Request $request
+     * @return JsonResponse
+     * 
+     * @throws \InvalidArgumentException When currency code is invalid
+     * @throws \JsonException When JSON is invalid
+     * @throws NbpClientException When NBP API error occurs
+     * @throws \JsonException When JSON is invalid
+     * @throws \Throwable When an unexpected error occurs
      */
     public function getQuote(Request $request): JsonResponse
     {
@@ -271,7 +295,10 @@ final class RatesController extends AbstractController
     /**
      * Parse and validate currency codes from comma-separated string.
      *
+     * @param string $codesParam
      * @return string[] Array of validated currency codes
+     * 
+     * @throws \InvalidArgumentException When currency codes are invalid
      */
     private function parseAndValidateCurrencyCodes(string $codesParam): array
     {
@@ -304,6 +331,11 @@ final class RatesController extends AbstractController
 
     /**
      * Validate and parse date string.
+     *
+     * @param string $dateStr
+     * @return \DateTimeImmutable
+     * 
+     * @throws \InvalidArgumentException When date is invalid
      */
     private function validateAndParseDate(string $dateStr): \DateTimeImmutable
     {
@@ -320,6 +352,11 @@ final class RatesController extends AbstractController
 
     /**
      * Validate days parameter.
+     *
+     * @param string $daysStr
+     * @return int
+     * 
+     * @throws \InvalidArgumentException When days are invalid
      */
     private function validateDays(string $daysStr): int
     {
