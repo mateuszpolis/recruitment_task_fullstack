@@ -1,0 +1,41 @@
+---
+description: Backend (PHP 8.2, Symfony 4.4) rules for the exchange office app — NBP integration, rate math, caching, tests
+globs:
+  - "src/**"
+  - "tests/**"
+alwaysApply: true
+---
+
+# Backend (PHP) Rules
+
+## Repository Context
+- Runtime: **PHP 8.2** (platform pinned in composer.json).
+- Framework pieces: **symfony/http-kernel 4.4**, **symfony/cache 4.4**, **symfony/yaml 4.4**, **doctrine/annotations**.
+- HTTP client: **guzzlehttp/guzzle 7.x**.
+- Structure:
+  - `src/Kernel.php`
+  - `src/App/Controller/DefaultController.php`
+  - Tests under `tests/` (PHPUnit 8.5, Symfony PHPUnit Bridge).
+- **No new Composer packages** — use only what’s in `composer.json`.
+
+---
+
+## Language & Code Standards
+1) **Strictness & style**
+- Add `declare(strict_types=1);` to new PHP files.
+- Follow PSR-12 formatting; type-hint **params, returns, and properties**.
+- Prefer **final** classes for stateless services; keep public surface minimal.
+
+2) **Controllers & services**
+- Keep controllers thin (HTTP → validation → delegate to service).
+- Put NBP fetching, caching, and **rate calculations** in dedicated services under `App\*` (e.g., `App\Service\NbpClient`, `App\Service\RateCalculator`).
+
+---
+
+## API Surface (HTTP)
+- Keep endpoints under **`/api/*`**. Respond with **JSON** only.
+- Use **consistent resource naming**; avoid versioning unless it already exists.
+- Return **2xx** on success; **4xx** for client errors; **5xx** for server errors.
+- Standard error envelope:
+  ```json
+  { "error": { "code": "STRING_CODE", "message": "Human readable", "details": { /* optional */ } } }

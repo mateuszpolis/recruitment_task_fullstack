@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+
+  webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: recruitment-webserver-dev
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
+      - APACHE_DOCUMENT_ROOT=/var/www/html/public
+    volumes:
+      # Mount source code for live editing
+      - ./src:/var/www/html/src
+      - ./assets:/var/www/html/assets
+      - ./templates:/var/www/html/templates
+      - ./config:/var/www/html/config
+      - ./public:/var/www/html/public
+      # Mount webpack config for frontend changes
+      - ./webpack.config.js:/var/www/html/webpack.config.js
+      # Mount composer and package files
+      - ./composer.json:/var/www/html/composer.json
+      - ./composer.lock:/var/www/html/composer.lock
+      - ./package.json:/var/www/html/package.json
+      - ./package-lock.json:/var/www/html/package-lock.json
+      # Exclude node_modules and vendor to avoid conflicts
+      # The container will use its own versions
+    depends_on: []
+    networks:
+      - recruitment-network
+
+networks:
+  recruitment-network:
+    driver: bridge

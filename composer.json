@@ -1,5 +1,7 @@
 {
   "name": "telemedi/test-purposes",
+  "description": "Exchange office application for recruitment task",
+  "license": "proprietary",
   "autoload": {
     "psr-4": {
       "App\\": "src/App/"
@@ -39,9 +41,14 @@
     "symfony/phpunit-bridge": "^6.3"
   },
   "scripts": {
-    "auto-scripts": {
-      "cache:clear": "symfony-cmd",
-      "assets:install %PUBLIC_DIR%": "symfony-cmd"
-    }
+  "auto-scripts": {
+    "cache:clear": "symfony-cmd",
+    "assets:install %PUBLIC_DIR%": "symfony-cmd"
+  },
+    "test": "vendor/bin/phpunit --colors=always",
+    "test:unit": "vendor/bin/phpunit --testsuite=unit --colors=always",
+    "test:ci": "vendor/bin/phpunit --coverage-clover build/coverage/clover.xml --colors=always",
+    "check:composer": "composer validate --no-check-publish --strict && composer dump-autoload -o -a",
+    "check:audit": "composer audit"
   }
 }
