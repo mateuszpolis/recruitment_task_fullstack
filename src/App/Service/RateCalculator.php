@@ -10,12 +10,14 @@ namespace App\Service;
  */
 final class RateCalculator
 {
-    private const DEFAULT_SCALE = 10000;
+    // Scaled integers for unit rates and PLN totals
+    private const RATE_SCALE = 10000;     // 4 d.p. for unit rates
+    private const TOTAL_SCALE = 100;      // 2 d.p. for PLN totals (grosz)
 
     // Business rule constants (scaled integers)
     private const EUR_USD_BUY_OFFSET = 1500;  // -0.15 PLN * 10000
     private const EUR_USD_SELL_OFFSET = 1100; // +0.11 PLN * 10000
-    private const OTHER_SELL_OFFSET = 2000;   // +0.20 PLN * 10000
+    private const OTHER_SELL_OFFSET = 2000;   // +0.20 PLN * 10000    
 
     // Supported currencies with buy/sell rules
     private const CURRENCY_RULES = [
@@ -36,7 +38,7 @@ final class RateCalculator
      *
      * @throws \InvalidArgumentException if the decimal string is empty or invalid
      */
-    public function parseDecimalToScaled(string $decimal, int $scale = self::DEFAULT_SCALE): int
+    public function parseDecimalToScaled(string $decimal, int $scale = self::RATE_SCALE): int
     {
         // Handle edge cases
         if (trim($decimal) === '') {
@@ -55,63 +57,49 @@ final class RateCalculator
         return (int) round($result);
     }
 
-    /**
-     * Formats a scaled integer as PLN string with 2 decimal places.
-     *
-     * @param int $scaled Scaled integer value
-     * @param int $scale  Scale factor (default: 10000)
-     *
-     * @return string Formatted PLN string (e.g., "4.23")
-     */
-    public function formatPln(int $scaled, int $scale = self::DEFAULT_SCALE): string
-    {
-        // Fallback to regular division since BC Math is not available
-        $result = $scaled / $scale;
-
-        // Round to 2 decimal places
-        return number_format($result, 2, '.', '');
-    }
 
     /**
-     * Calculates buy and sell rates from NBP mid rate according to business rules.
+     * Converts a NBP mid rate to buy/sell rates.
      *
      * @param string $code Currency code (EUR, USD, CZK, IDR, BRL)
      * @param string $mid  NBP mid rate as decimal string
      *
-     * @return array Array with 'buy' and 'sell' keys (null if not available)
-     *
-     * @throws \InvalidArgumentException If currency code is not supported
+     * @return array Array with 'buy' and 'sell' as scaled integers
      */
-    public function midToBuySell(string $code, string $mid): array
+    public function midToBuySellInt(string $code, string $mid): array
     {
         $code = strtoupper(trim($code));
-
         if (!isset(self::CURRENCY_RULES[$code])) {
             throw new \InvalidArgumentException('Unsupported currency code: ' . $code);
         }
-
         $rules = self::CURRENCY_RULES[$code];
-        $midScaled = $this->parseDecimalToScaled($mid);
+        $midScaled = $this->toScaledInt($mid, self::RATE_SCALE);
 
-        $result = ['buy' => null, 'sell' => null];
-
-        // Calculate buy rate (EUR/USD only)
+        $buy = null; $sell = null;
         if ($rules['has_buy']) {
-            $buyScaled = $midScaled - self::EUR_USD_BUY_OFFSET;
-            $result['buy'] = $this->formatPln($buyScaled);
+            $buy = $midScaled - self::EUR_USD_BUY_OFFSET;    // offsets already in RATE_SCALE
         }
-
-        // Calculate sell rate (all currencies)
         if ($rules['has_sell']) {
-            if ($code === 'EUR' || $code === 'USD') {
-                $sellScaled = $midScaled + self::EUR_USD_SELL_OFFSET;
-            } else {
-                $sellScaled = $midScaled + self::OTHER_SELL_OFFSET;
-            }
-            $result['sell'] = $this->formatPln($sellScaled);
+            $sell = $midScaled + (($code === 'EUR' || $code === 'USD') ? self::EUR_USD_SELL_OFFSET : self::OTHER_SELL_OFFSET);
         }
+        return ['buy' => $buy, 'sell' => $sell]; // scaled ints
+    }
 
-        return $result;
+    /**
+     * Converts a NBP mid rate to buy/sell rates.
+     *
+     * @param string $code Currency code (EUR, USD, CZK, IDR, BRL)
+     * @param string $mid  NBP mid rate as decimal string
+     *
+     * @return array Array with 'buy' and 'sell' as formatted strings
+     */
+    public function midToBuySell(string $code, string $mid): array
+    {
+        $r = $this->midToBuySellInt($code, $mid);
+        return [
+            'buy'  => $r['buy']  === null ? null : $this->formatScaled($r['buy'],  self::RATE_SCALE, 4),
+            'sell' => $r['sell'] === null ? null : $this->formatScaled($r['sell'], self::RATE_SCALE, 4),
+        ];
     }
 
     /**
@@ -131,37 +119,106 @@ final class RateCalculator
         $code = strtoupper(trim($code));
         $side = strtolower(trim($side));
 
-        // Validate side
         if (!in_array($side, ['buy', 'sell'], true)) {
             throw new \InvalidArgumentException('Side must be either "buy" or "sell"');
         }
-
-        // Validate amount format
-        if (!preg_match('/^\d+(?:\.\d{1,2})?$/', trim($amount))) {
+        if (!preg_match('/^(?!0+(?:[.,]0{1,2})?$)\d+(?:[.,]\d{1,2})?$/', trim($amount))) {
             throw new \InvalidArgumentException('Amount must be a positive number with at most 2 decimal places');
         }
+        $amountScaled = $this->toScaledInt($amount, 100); // amount with 2 d.p.
 
-        $amountFloat = (float) $amount;
-        if ($amountFloat <= 0) {
-            throw new \InvalidArgumentException('Amount must be greater than 0');
-        }
-
-        // Get buy/sell rates
-        $buySell = $this->midToBuySell($code, $mid);
-
-        // Check if the requested operation is supported
-        if ($buySell[$side] === null) {
+        $rates = $this->midToBuySellInt($code, $mid);
+        if ($rates[$side] === null) {
             throw new \InvalidArgumentException(sprintf('%s operations are not supported for %s', ucfirst($side), $code));
         }
+        $unitRateScaled = $rates[$side]; // PLN * 10000 per 1 unit
 
-        $unitRate = $buySell[$side];
+        // total_grosz = round_half_up( amount_scaled * unit_rate_scaled / 10000 )
+        $product = $amountScaled * $unitRateScaled;            // scale = 100 * 10000
+        $totalGrosz = intdiv($product + 5000, 10000);          // +5000 for half-up
 
-        // Calculate total using regular multiplication (BC Math not available)
-        $total = number_format((float) trim($amount) * (float) $unitRate, 2, '.', '');
+        $unitRateStr = $this->formatScaled($unitRateScaled, self::RATE_SCALE, 4); // 4 d.p. rate
+        $totalStr    = $this->formatScaled($totalGrosz, self::TOTAL_SCALE, 2);    // PLN total 2 d.p.
 
         return [
-            'unitRate' => $unitRate,
-            'total' => $total,
+            'unitRate' => $unitRateStr,
+            'total'    => $totalStr,
         ];
+    }
+
+    /**
+     * Converts a decimal string to scaled integer.
+     *
+     * @param string $decimal Decimal number as string (e.g., "4.2345")
+     * @param int    $scale   Scale factor (default: 10000)
+     *
+     * @return int Scaled integer representation
+     */
+    private function toScaledInt(string $decimal, int $scale): int
+    {
+        $s = trim($decimal);
+        if ($s === '') throw new \InvalidArgumentException('Decimal string cannot be empty');
+        if (!preg_match('/^[+-]?\d+(?:[.,]\d+)?$/', $s)) {
+            throw new \InvalidArgumentException('Invalid decimal format: ' . $decimal);
+        }
+
+        // normalize comma to dot
+        $s = str_replace(',', '.', $s);
+
+        $neg = $s[0] === '-';
+        if ($s[0] === '+' || $s[0] === '-') $s = substr($s, 1);
+
+        [$int, $frac] = array_pad(explode('.', $s, 2), 2, '');    
+        $intPart = ltrim($int, '0'); if ($intPart === '') $intPart = '0';
+
+        $scaleDigits = (int)log10($scale); // e.g., 4 for 10000
+        $frac = substr($frac . str_repeat('0', $scaleDigits), 0, $scaleDigits);
+
+        // half-up rounding beyond scale
+        $nextDigit = strlen($decimal) && preg_match('/\.(\d{'.($scaleDigits+1).'})/', str_replace(',', '.', trim($decimal)), $m)
+            ? (int)$m[1][$scaleDigits] : 0;
+
+        $scaled = (int)$intPart * $scale + (int)$frac;
+        if ($nextDigit >= 5) $scaled += 1;
+
+        return $neg ? -$scaled : $scaled;
+    }
+
+    /**
+     * Formats a scaled integer as a decimal string.
+     *
+     * @param int $scaled     Scaled integer value
+     * @param int $scale      Scale factor
+     * @param int $decimals   Number of decimal places
+     *
+     * @return string Formatted decimal string
+     */
+    private function formatScaled(int $scaled, int $scale, int $decimals): string
+    {
+        $neg = $scaled < 0 ? '-' : '';
+        $scaled = abs($scaled);
+        $scaleDigits = (int)log10($scale);
+        $intPart = intdiv($scaled, $scale);
+        $fracPart = $scaled % $scale;
+
+        $fracStr = str_pad((string)$fracPart, $scaleDigits, '0', STR_PAD_LEFT);
+        if ($decimals < $scaleDigits) {
+            // round half up to desired decimals
+            $roundDigit = (int)$fracStr[$decimals] ?? 0;
+            $fracStr = substr($fracStr, 0, $decimals);
+            if ($roundDigit >= 5) {
+                $carry = 1;
+                for ($i = $decimals - 1; $i >= 0 && $carry; $i--) {
+                    $d = (int)$fracStr[$i] + 1;
+                    $fracStr[$i] = (string)($d % 10);
+                    $carry = $d >= 10 ? 1 : 0;
+                }
+                if ($carry) $intPart += 1;
+            }
+        } else {
+            $fracStr = str_pad($fracStr, $decimals, '0', STR_PAD_RIGHT);
+        }
+
+        return $decimals === 0 ? $neg.$intPart : $neg.$intPart.'.'.$fracStr;
     }
 }

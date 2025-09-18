@@ -77,51 +77,7 @@ class RateCalculatorTest extends TestCase
         $this->calculator->parseDecimalToScaled('abc');
     }
 
-    // formatPln Tests
-
-    public function testFormatPlnBasicCases(): void
-    {
-        $this->assertSame('4.23', $this->calculator->formatPln(42345));
-        $this->assertSame('1.00', $this->calculator->formatPln(10000));
-        $this->assertSame('0.50', $this->calculator->formatPln(5000));
-        $this->assertSame('0.00', $this->calculator->formatPln(0));
-        $this->assertSame('0.01', $this->calculator->formatPln(123));
-    }
-
-    public function testFormatPlnNegativeNumbers(): void
-    {
-        $this->assertSame('-4.23', $this->calculator->formatPln(-42345));
-        $this->assertSame('-1.00', $this->calculator->formatPln(-10000));
-        $this->assertSame('-0.50', $this->calculator->formatPln(-5000));
-    }
-
-    public function testFormatPlnRoundingBoundaries(): void
-    {
-        // Test precise rounding to 2 decimal places
-        $this->assertSame('1.50', $this->calculator->formatPln(14995)); // 1.4995 -> rounds to 1.50
-        $this->assertSame('1.50', $this->calculator->formatPln(15005)); // 1.5005 -> rounds to 1.50
-        $this->assertSame('0.15', $this->calculator->formatPln(1500));  // 0.15 exactly
-        $this->assertSame('0.15', $this->calculator->formatPln(1499));  // 0.1499 -> rounds to 0.15
-        $this->assertSame('0.15', $this->calculator->formatPln(1501));  // 0.1501 -> rounds to 0.15
-    }
-
-    public function testFormatPlnEdgeCasesRounding(): void
-    {
-        // Test edge cases for rounding
-        $this->assertSame('0.00', $this->calculator->formatPln(4));     // 0.0004 -> 0.00
-        $this->assertSame('0.00', $this->calculator->formatPln(49));    // 0.0049 -> 0.00
-        $this->assertSame('0.01', $this->calculator->formatPln(50));    // 0.005 -> 0.01 (rounds up)
-        $this->assertSame('0.01', $this->calculator->formatPln(99));    // 0.0099 -> 0.01
-        $this->assertSame('0.01', $this->calculator->formatPln(100));   // 0.01 exactly
-    }
-
-    public function testFormatPlnCustomScale(): void
-    {
-        $this->assertSame('4.23', $this->calculator->formatPln(4234, 1000));
-        $this->assertSame('42.30', $this->calculator->formatPln(423, 10));
-        $this->assertSame('4.20', $this->calculator->formatPln(42, 10));
-    }
-
+  
     // midToBuySell Tests
 
     public function testMidToBuySellEUR(): void
@@ -130,16 +86,16 @@ class RateCalculatorTest extends TestCase
 
         $this->assertArrayHasKey('buy', $result);
         $this->assertArrayHasKey('sell', $result);
-        $this->assertSame('4.35', $result['buy']);  // 4.50 - 0.15
-        $this->assertSame('4.61', $result['sell']); // 4.50 + 0.11
+        $this->assertSame('4.3500', $result['buy']);  // 4.50 - 0.15
+        $this->assertSame('4.6100', $result['sell']); // 4.50 + 0.11
     }
 
     public function testMidToBuySellUSD(): void
     {
         $result = $this->calculator->midToBuySell('USD', '4.25');
 
-        $this->assertSame('4.10', $result['buy']);  // 4.25 - 0.15
-        $this->assertSame('4.36', $result['sell']); // 4.25 + 0.11
+        $this->assertSame('4.1000', $result['buy']);  // 4.25 - 0.15
+        $this->assertSame('4.3600', $result['sell']); // 4.25 + 0.11
     }
 
     public function testMidToBuySellCZK(): void
@@ -147,7 +103,7 @@ class RateCalculatorTest extends TestCase
         $result = $this->calculator->midToBuySell('CZK', '0.18');
 
         $this->assertNull($result['buy']);           // No buy rate for CZK
-        $this->assertSame('0.38', $result['sell']); // 0.18 + 0.20
+        $this->assertSame('0.3800', $result['sell']); // 0.18 + 0.20
     }
 
     public function testMidToBuySellIDR(): void
@@ -155,7 +111,7 @@ class RateCalculatorTest extends TestCase
         $result = $this->calculator->midToBuySell('IDR', '0.000275');
 
         $this->assertNull($result['buy']);              // No buy rate for IDR
-        $this->assertSame('0.20', $result['sell']);    // 0.000275 + 0.20
+        $this->assertSame('0.2003', $result['sell']);    // 0.000275 + 0.20
     }
 
     public function testMidToBuySellBRL(): void
@@ -163,7 +119,7 @@ class RateCalculatorTest extends TestCase
         $result = $this->calculator->midToBuySell('BRL', '0.85');
 
         $this->assertNull($result['buy']);           // No buy rate for BRL
-        $this->assertSame('1.05', $result['sell']); // 0.85 + 0.20
+        $this->assertSame('1.0500', $result['sell']); // 0.85 + 0.20
     }
 
     public function testMidToBuySellCaseInsensitive(): void
@@ -180,8 +136,8 @@ class RateCalculatorTest extends TestCase
     {
         $result = $this->calculator->midToBuySell(' EUR ', '4.50');
 
-        $this->assertSame('4.35', $result['buy']);
-        $this->assertSame('4.61', $result['sell']);
+        $this->assertSame('4.3500', $result['buy']);
+        $this->assertSame('4.6100', $result['sell']);
     }
 
     public function testMidToBuySellBoundaryOffsets(): void
@@ -190,8 +146,8 @@ class RateCalculatorTest extends TestCase
         $result = $this->calculator->midToBuySell('EUR', '0.14995');
 
         // 0.14995 - 0.15 = -0.00005, 0.14995 + 0.11 = 0.25995
-        $this->assertSame('0.00', $result['buy']);   // Very small negative rounds to 0.00
-        $this->assertSame('0.26', $result['sell']);
+        $this->assertSame('0.0000', $result['buy']);   // Very small negative rounds to 0.00
+        $this->assertSame('0.2600', $result['sell']);
     }
 
     public function testMidToBuySellPrecisionBoundaries(): void
@@ -200,8 +156,8 @@ class RateCalculatorTest extends TestCase
         $result = $this->calculator->midToBuySell('EUR', '1.5005');
 
         // 1.5005 - 0.15 = 1.3505, 1.5005 + 0.11 = 1.6105
-        $this->assertSame('1.35', $result['buy']);   // 1.3505 -> rounds to 1.35
-        $this->assertSame('1.61', $result['sell']);  // 1.6105 -> rounds to 1.61
+        $this->assertSame('1.3505', $result['buy']);   // 1.3505 -> rounds to 1.35
+        $this->assertSame('1.6105', $result['sell']);  // 1.6105 -> rounds to 1.61
     }
 
     public function testMidToBuySellUnsupportedCurrency(): void
@@ -219,16 +175,6 @@ class RateCalculatorTest extends TestCase
 
     // Integration Tests
 
-    public function testRoundTripConversion(): void
-    {
-        // Test that parseDecimalToScaled -> formatPln preserves precision
-        $original = '4.23';
-        $scaled = $this->calculator->parseDecimalToScaled($original);
-        $formatted = $this->calculator->formatPln($scaled);
-
-        $this->assertSame($original, $formatted);
-    }
-
     public function testFullWorkflowWithRealRates(): void
     {
         // Test complete workflow with realistic NBP rates
@@ -241,23 +187,23 @@ class RateCalculatorTest extends TestCase
         $czkRates = $this->calculator->midToBuySell('CZK', $czkMid);
 
         // Verify EUR rates
-        $this->assertSame('4.17', $eurRates['buy']);  // 4.3245 - 0.15
-        $this->assertSame('4.43', $eurRates['sell']); // 4.3245 + 0.11
+        $this->assertSame('4.1745', $eurRates['buy']);  // 4.3245 - 0.15
+        $this->assertSame('4.4345', $eurRates['sell']); // 4.3245 + 0.11
 
         // Verify USD rates
-        $this->assertSame('3.84', $usdRates['buy']);  // 3.9876 - 0.15
-        $this->assertSame('4.10', $usdRates['sell']); // 3.9876 + 0.11
+        $this->assertSame('3.8376', $usdRates['buy']);  // 3.9876 - 0.15
+        $this->assertSame('4.0976', $usdRates['sell']); // 3.9876 + 0.11
 
         // Verify CZK rates
         $this->assertNull($czkRates['buy']);
-        $this->assertSame('0.38', $czkRates['sell']); // 0.1789 + 0.20
+        $this->assertSame('0.3789', $czkRates['sell']); // 0.1789 + 0.20
     }
 
     public function testCalculateQuoteEurBuy(): void
     {
         $result = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '100.00');
 
-        $this->assertSame('4.10', $result['unitRate']); // 4.25 - 0.15
+        $this->assertSame('4.1000', $result['unitRate']); // 4.25 - 0.15
         $this->assertSame('410.00', $result['total']); // 100 * 4.10
     }
 
@@ -265,7 +211,7 @@ class RateCalculatorTest extends TestCase
     {
         $result = $this->calculator->calculateQuote('EUR', '4.2500', 'sell', '50.25');
 
-        $this->assertSame('4.36', $result['unitRate']); // 4.25 + 0.11
+        $this->assertSame('4.3600', $result['unitRate']); // 4.25 + 0.11
         $this->assertSame('219.09', $result['total']); // 50.25 * 4.36
     }
 
@@ -273,16 +219,16 @@ class RateCalculatorTest extends TestCase
     {
         $result = $this->calculator->calculateQuote('USD', '3.9800', 'buy', '200.00');
 
-        $this->assertSame('3.83', $result['unitRate']); // 3.98 - 0.15
-        $this->assertSame('766.00', $result['total']); // 200 * 3.83
+        $this->assertSame('3.8300', $result['unitRate']);
+        $this->assertSame('766.00', $result['total']);
     }
 
     public function testCalculateQuoteCzkSell(): void
     {
         $result = $this->calculator->calculateQuote('CZK', '0.1750', 'sell', '75.50');
 
-        $this->assertSame('0.38', $result['unitRate']); // 0.175 + 0.20
-        $this->assertSame('28.69', $result['total']); // 75.50 * 0.38
+        $this->assertSame('0.3750', $result['unitRate']);
+        $this->assertSame('28.31', $result['total']);
     }
 
     public function testCalculateQuoteCzkBuyNotSupported(): void
@@ -312,7 +258,6 @@ class RateCalculatorTest extends TestCase
     public function testCalculateQuoteZeroAmount(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Amount must be greater than 0');
 
         $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '0.00');
     }
@@ -321,18 +266,18 @@ class RateCalculatorTest extends TestCase
     {
         // Test with amount having exactly 2 decimal places
         $result = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '123.45');
-        $this->assertSame('4.10', $result['unitRate']);
-        $this->assertSame('506.14', $result['total']); // 123.45 * 4.10 (bcmul rounds correctly)
+        $this->assertSame('4.1000', $result['unitRate']);
+        $this->assertSame('506.15', $result['total']);
 
         // Test with amount having 1 decimal place
         $result = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '123.5');
-        $this->assertSame('4.10', $result['unitRate']);
-        $this->assertSame('506.35', $result['total']); // 123.5 * 4.10
+        $this->assertSame('4.1000', $result['unitRate']);
+        $this->assertSame('506.35', $result['total']);
 
         // Test with amount having no decimal places
         $result = $this->calculator->calculateQuote('EUR', '4.2500', 'buy', '123');
-        $this->assertSame('4.10', $result['unitRate']);
-        $this->assertSame('504.30', $result['total']); // 123 * 4.10
+        $this->assertSame('4.1000', $result['unitRate']);
+        $this->assertSame('504.30', $result['total']);
     }
 
     public function testCalculateQuoteAmountTooManyDecimals(): void
@@ -355,16 +300,16 @@ class RateCalculatorTest extends TestCase
     {
         $result = $this->calculator->calculateQuote(' EUR ', '4.2500', ' buy ', ' 100.00 ');
 
-        $this->assertSame('4.10', $result['unitRate']);
+        $this->assertSame('4.1000', $result['unitRate']);
         $this->assertSame('410.00', $result['total']);
     }
 
-    public function testCalculateQuotePrecisionWithBcmath(): void
+    public function testCalculateQuotePrecision(): void
     {
         // Test a case where floating point precision might be an issue
         $result = $this->calculator->calculateQuote('EUR', '4.1111', 'buy', '33.33');
 
-        $this->assertSame('3.96', $result['unitRate']); // 4.1111 - 0.15 = 3.9611, formatted to 3.96
-        $this->assertSame('131.98', $result['total']); // 33.33 * 3.96 using bcmul for precision
+        $this->assertSame('3.9611', $result['unitRate']);
+        $this->assertSame('132.02', $result['total']);
     }
 }
